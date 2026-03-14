@@ -1,17 +1,12 @@
 from django.db import models
+from django.utils.text import slugify
 
-from common.models import BaseModel
+from locations.choices import LocationType
+from common.models import NameModel
 
 
 # Create your models here.
-class Location(BaseModel):
-    class LocationType(models.TextChoices):
-        COUNTRY = 'Country', 'Country'
-        CITY = 'City', 'City'
-        TOWN = 'Town', 'Town'
-        WILDERNESS = 'Wilderness', 'Wilderness'
-        DUNGEON = 'Dungeon', 'Dungeon'
-
+class Location(NameModel):
     type = models.CharField(
         max_length=50,
         choices=LocationType.choices,
@@ -30,6 +25,20 @@ class Location(BaseModel):
         blank=True,
         related_name='sub_locations',
     )
+
+    class Meta(NameModel.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                fields=['name', 'universe'],
+                name='unique_name_per_universe',
+                # violation_error_message="A location with this name already exists in this universe!"
+            )
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(f"{self.universe.slug}-{self.name}")
+        super().save(*args, **kwargs)
 
     def get_descendant_pks(self):
         pks = []

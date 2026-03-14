@@ -1,4 +1,3 @@
-from django.core.validators import MinLengthValidator, MaxLengthValidator
 from django.db import models
 from django.utils.text import slugify
 
@@ -7,32 +6,28 @@ from common.validators import ImageURLValidator, NameValidator
 
 # Create your models here.
 class BaseModel(models.Model):
-    name = models.CharField(
-        max_length=100,
-        validators=[
-            MinLengthValidator(5),
-            NameValidator()
-        ]
-    )
-
-    img = models.URLField(
+    image_url = models.URLField(
         blank=True,
         validators=[ImageURLValidator()]
     )
 
-    description = models.TextField(
-        validators=[
-            MinLengthValidator(50),
-            MaxLengthValidator(5000)
-        ]
-    )
+    description = models.TextField()
 
     created_at = models.DateTimeField(
         auto_now_add=True
     )
-
     updated_at = models.DateTimeField(
         auto_now=True
+    )
+
+    class Meta:
+        abstract = True
+        ordering = ['-updated_at']
+
+class NameModel(BaseModel):
+    name = models.CharField(
+        max_length=100,
+        validators=[NameValidator()]
     )
 
     slug = models.SlugField(
@@ -41,20 +36,13 @@ class BaseModel(models.Model):
         editable=False,
     )
 
-    class Meta:
+    class Meta(BaseModel.Meta):
         abstract = True
-        ordering = ['-updated_at']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
-
-
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            super().save(*args, **kwargs)
-        if not self.slug:
-            self.slug = slugify(f"{self.name}-{self.pk}")
-            super().save(update_fields=['slug'])
-        else:
-            super().save(*args, **kwargs)
-
