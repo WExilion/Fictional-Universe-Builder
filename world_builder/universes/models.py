@@ -1,8 +1,8 @@
-from django.core.validators import MinLengthValidator
+from django.core.validators import MinLengthValidator, RegexValidator
 from django.db import models
 
 from common.models import NameModel
-from common.validators import NameValidator
+from common.validators import GenreNameValidator
 
 
 # Create your models here.
@@ -28,8 +28,8 @@ class Genre(models.Model):
         max_length=50,
         unique=True,
         validators=[
-            MinLengthValidator(3, 'Genre name must be at least 3 characters long.'),
-            NameValidator()
+            MinLengthValidator(limit_value=3, message='Genre must be at least 3 characters long.'),
+            GenreNameValidator
         ]
     )
 

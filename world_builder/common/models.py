@@ -27,7 +27,7 @@ class BaseModel(models.Model):
 class NameModel(BaseModel):
     name = models.CharField(
         max_length=100,
-        validators=[NameValidator()]
+        validators=[NameValidator]
     )
 
     slug = models.SlugField(

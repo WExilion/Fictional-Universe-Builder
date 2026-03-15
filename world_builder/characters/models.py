@@ -8,11 +8,11 @@ from common.validators import NameValidator
 class Character(BaseModel):
     first_name = models.CharField(
         max_length=50,
-        validators=[NameValidator()]
+        validators=[NameValidator]
     )
     last_name = models.CharField(
         max_length=50,
-        validators=[NameValidator()]
+        validators=[NameValidator]
     )
 
     role = models.CharField(
