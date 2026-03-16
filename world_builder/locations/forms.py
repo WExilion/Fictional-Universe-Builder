@@ -1,25 +1,45 @@
 from django import forms
+from django.db.models import Q
+from django.utils.text import slugify
 
-from common.mixins import NameLengthMixin, TimestampFormMixin
+from common.mixins import NameLengthMixin
 from locations.models import Location
+from universes.models import Universe
 
 
 class LocationBaseForm(NameLengthMixin, forms.ModelForm):
     class Meta:
         model = Location
-        fields = ['name', 'image_url', 'description', 'type', 'universe', 'parent_location']
+        fields = ['name', 'image_url', 'type', 'description', 'universe', 'parent_location']
+        labels = {
+            'name': 'Location Name',
+            'image_url': 'Image Link (Optional)',
+            'type': 'Type (Optional)',
+            'description': 'Description',
+            'universe': 'Associated Universe',
+            'parent_location': 'Located Within (Optional)',
+        }
+
+        help_texts = {
+            'name': 'Enter a unique name for the location.',
+            'image_url': 'Provide a direct link to an image file (JPG, JPEG, PNG, GIF, WEBP, SVG).',
+            'tyoe': '',
+            'description': 'Give some background details about your location.',
+            'universe': 'You can select the associated universe.',
+        }
         widgets = {
             'name': forms.TextInput(attrs={
-                'placeholder': 'Enter location name',
+                'placeholder': 'e.g., Hogwarts, Minas Tirith, Gotham City, The Shire, Winterfell...',
                 'class': 'form-control'
             }),
             'image_url': forms.URLInput(attrs={
-                'placeholder': 'Enter image URL',
+                'placeholder': 'https://example.com/image.jpg',
                 'class': 'form-control'
             }),
             'description': forms.Textarea(attrs={
-                'placeholder': 'Enter description',
-                'class': 'form-control'
+                'placeholder': 'e.g., A high-tech metropolis powered by neon and steam...',
+                'class': 'form-control',
+                'rows': 6
             }),
             'type': forms.Select(attrs={
                 'class': 'form-control'
@@ -31,9 +51,15 @@ class LocationBaseForm(NameLengthMixin, forms.ModelForm):
                 'class': 'form-control'
             }),
         }
-        labels = {
-            'image_url': 'Image URL',
-            'parent_location': 'Parent Location (optional)',
+
+        error_messages = {
+            'name': {
+                'max_length': 'That name is a bit too long. The limit is 100 characters.',
+                'required': 'Please give your location a name.'
+            },
+            'description': {
+                'required': 'Every location needs a backstory.',
+            }
         }
 
 
@@ -59,18 +85,7 @@ class LocationBaseForm(NameLengthMixin, forms.ModelForm):
             self.fields['parent_location'].queryset = Location.objects.none()
 
     def clean_name(self):
-        name = self._check_name_length(field_name='name', min_length=5, field_label='Location Name')
-
-        universe = self.cleaned_data.get('universe')
-
-        if universe and Location.objects.filter(
-            name__iexact=name,
-            universe=universe
-        ).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError(
-                f"A location named '{name}' already exists in this universe."
-            )
-        return name
+        return self._check_name_length(field_name='name', min_length=5, field_label='Location Name')
 
 
     def clean_parent_location(self):
@@ -83,12 +98,56 @@ class LocationBaseForm(NameLengthMixin, forms.ModelForm):
 
         return parent
 
-class LocationCreateForm(LocationBaseForm):
-    ...
+    def clean(self):
+        cleaned_data = super().clean()
+        name = self.cleaned_data.get('name')
+        universe = self.cleaned_data.get('universe')
 
-class LocationUpdateForm(TimestampFormMixin, LocationBaseForm):
-    class Meta(LocationBaseForm.Meta):
-        fields = LocationBaseForm.Meta.fields
+        if name and universe:
+            generated_slug = slugify(f"{universe.slug}-{name}")
+
+            duplicate = Location.objects.filter(
+                Q(name__iexact=name) | Q(slug=generated_slug),
+                universe=universe
+            ).exclude(pk=self.instance.pk).first()
+
+            if duplicate:
+                if duplicate.name.lower() == name.lower():
+                    self.add_error(
+                        field='name',
+                        error=f"A location named '{name}' already exists in {universe.name}."
+                                   )
+                else:
+                    self.add_error(
+                        field='name',
+                        error=f"A location with a similar name to '{duplicate.name}' already exists in {universe.name}. "
+                        f"Names like 'Planet Second' and 'Planet-Second', or 'O'reen' and 'Oreen' are considered the same."
+                    )
+        return cleaned_data
+
+
+
+class LocationCreateForm(LocationBaseForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['parent_location'].disabled = True
+        self.fields['parent_location'].help_text = 'You can assign a parent location after creation.'
+
+
+class LocationUpdateForm(LocationBaseForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.parent_location:
+            self.fields['universe'].disabled = True
+            self.fields['universe'].help_text = (
+                'Universe cannot be changed while a parent location is assigned. '
+                'Remove the parent location and update first to change the universe.'
+            )
+        else:
+            self.fields['universe'].help_text = 'No parent location assigned. You can change the universe.'
+
+
+
 
 class LocationDeleteForm(forms.Form):
     confirm = forms.BooleanField(
@@ -99,14 +158,21 @@ class LocationDeleteForm(forms.Form):
         }
     )
 
+
 class SearchForm(forms.Form):
     search = forms.CharField(
         max_length=100,
         required=False,
         label='Search',
         widget=forms.TextInput(attrs={
-            'placeholder': 'Search universes...',
+            'placeholder': 'Search location...',
             'class': 'form-control',
             'autocomplete': 'off',
         })
+    )
+
+    universe = forms.ModelChoiceField(
+        queryset=Universe.objects.all(),
+        required=False,
+        empty_label="All Universe"
     )

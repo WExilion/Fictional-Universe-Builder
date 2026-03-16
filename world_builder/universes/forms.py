@@ -1,35 +1,23 @@
 from django import forms
 from django.core.validators import MinLengthValidator
+from django.db.models import Q
+from django.utils.text import slugify
 
-from common.mixins import NameLengthMixin, TimestampFormMixin
+from common.mixins import NameLengthMixin
 from common.validators import GenreNameValidator
 from universes.models import Universe, Genre
 
 
-class SearchForm(forms.Form):
-    search = forms.CharField(
-        max_length=100,
-        required=False,
-        label='Search',
-        widget=forms.TextInput(attrs={
-            'placeholder': 'Search universes...',
-            'class': 'form-control',
-            'autocomplete': 'off',
-        })
-    )
-    genre = forms.ModelChoiceField(
-        queryset=Genre.objects.all(),
-        required=False,
-        empty_label="All Genres"
-    )
-
 class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
     genres = forms.ModelMultipleChoiceField(
         queryset=Genre.objects.all(),
-        required=False,
+        required=True,
         label="Select Genres",
         help_text="Pick up to 6 genres that best describe your universe. You can combine multiple.",
-        widget = forms.CheckboxSelectMultiple(attrs={'class': 'genre-checkbox'})
+        widget = forms.CheckboxSelectMultiple(attrs={'class': 'genre-checkbox'}),
+        error_messages = {
+            'required': 'Please select at least one genre to help define your universe.'
+        }
     )
     new_genre = forms.CharField(
         max_length=50,
@@ -52,23 +40,14 @@ class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
         fields = ['name', 'image_url', 'description', 'genres']
         labels = {
             'name': 'Universe Name',
-            'image_url': 'Image URL',
+            'image_url': 'Image Link (Optional)',
             'description': 'Lore & Background',
+            'genres': 'Genres',
         }
         help_texts = {
             'name': 'Enter a unique name for your fictional setting.',
             'image_url': 'Provide a direct link to an image (JPG, JPEG, PNG, GIF, WEBP, SVG).',
             'description': 'Provide a detailed background of your universe.',
-        }
-
-        error_messages = {
-            'name': {
-                'max_length': 'Whoa, that’s a mouthful. Let\'s keep the name under 100 characters.',
-                'required': 'Please name your universe.'
-            },
-            'description': {
-                'required': 'Your universe needs a backstory.',
-            }
         }
         widgets = {
             'name': forms.TextInput(attrs={
@@ -85,13 +64,38 @@ class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
             }),
         }
 
+        error_messages = {
+            'name': {
+                'max_length': 'Whoa, that’s a mouthful. Let\'s keep the name under 100 characters.',
+                'required': 'Please name your universe.'
+            },
+            'description': {
+                'required': 'Your universe needs a backstory.',
+            }
+        }
+
 
     def clean_name(self):
         name = self._check_name_length(field_name='name', min_length=8, field_label='Universe Name')
 
-        if Universe.objects.filter(name__iexact=name).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError(f"A universe named '{name}' already exists.")
+        generated_slug = slugify(name)
+
+        duplicate = Universe.objects.filter(
+            Q(name__iexact=name) | Q(slug=generated_slug)
+        ).exclude(pk=self.instance.pk).first()
+
+        if duplicate:
+            if duplicate.name.lower() == name.lower():
+                raise forms.ValidationError(f"A universe named '{name}' already exists.")
+            else:
+                raise forms.ValidationError(
+                    f"A universe with a similar name to '{duplicate.name}' already exists. "
+                    f"Names like Universe Second and Universe-Second, or Galaxy's Edge and Galaxys Edge are considered the same."
+                )
+
         return name
+
+
 
     def clean_new_genre(self):
         new_genre = self.cleaned_data.get('new_genre')
@@ -109,21 +113,23 @@ class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
 
             if new_genre.lower() in genre_names:
                 self.add_error(
-                    'new_genre',
-                    f'"{new_genre}" is already selected above — no need to add it again.'
+                    field='new_genre',
+                    error=f'"{new_genre}" is already selected above — no need to add it again.'
                 )
             if Genre.objects.filter(name__iexact=new_genre).exists():
                 self.add_error(
-                    'new_genre',
-                    f'"{new_genre}" already exists in the genre list — select it from the checkboxes above.'
+                    field='new_genre',
+                    error=f'"{new_genre}" already exists in the genre list — select it from the checkboxes above.'
                 )
 
+        new_genre_is_valid = new_genre and not self._errors.get('new_genre')
+        total = len(genres) + (1 if new_genre_is_valid else 0)
+        # total = len(genres) + (1 if new_genre else 0)
 
-        total = len(genres) + (1 if new_genre else 0)
         if total > 6:
             self.add_error(
-                'genres',
-                f'You selected {total} genres — please keep it to 6 or fewer in total.'
+                field='genres',
+                error=f'You selected {total} genres — please keep it to 6 or fewer in total.'
             )
         return cleaned_data
 
@@ -147,16 +153,32 @@ class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
 class UniverseCreateForm(UniverseBaseForm):
     ...
 
-class UniverseUpdateForm(TimestampFormMixin, UniverseBaseForm):
-     class Meta(UniverseBaseForm.Meta):
-         fields = UniverseBaseForm.Meta.fields
+class UniverseUpdateForm(UniverseBaseForm):
+    ...
 
 
 class UniverseDeleteForm(forms.Form):
     confirm = forms.BooleanField(
         required=True,
+        label="I confirm that I want to delete this universe",
         error_messages={
             'required': 'You must confirm before deleting.'
         }
     )
 
+class SearchForm(forms.Form):
+    search = forms.CharField(
+        max_length=100,
+        required=False,
+        label='Search',
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Search universes...',
+            'class': 'form-control',
+            'autocomplete': 'off',
+        })
+    )
+    genre = forms.ModelChoiceField(
+        queryset=Genre.objects.all(),
+        required=False,
+        empty_label="All Genres"
+    )

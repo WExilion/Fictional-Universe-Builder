@@ -1,5 +1,6 @@
-from django.core.validators import MinLengthValidator, RegexValidator
+from django.core.validators import MinLengthValidator
 from django.db import models
+from django.utils.text import slugify
 
 from common.models import NameModel
 from common.validators import GenreNameValidator
@@ -18,10 +19,23 @@ class Universe(NameModel):
             models.UniqueConstraint(
                 fields=['name'],
                 name='unique_universe_name',
-                # violation_error_message="A universe with this name already exists!"
+                # violation_error_message="A universe with this name already exists."
+
+            ),
+            models.UniqueConstraint(
+                fields=['slug'],
+                name='unique_universe_slug',
+                # violation_error_message="A universe with a similar name already exists in this universe."
 
             )
         ]
+
+    # maybe make it imposible to change the name?
+    def save(self, *args, **kwargs):
+        self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+
 
 class Genre(models.Model):
     name = models.CharField(

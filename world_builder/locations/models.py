@@ -31,14 +31,19 @@ class Location(NameModel):
             models.UniqueConstraint(
                 fields=['name', 'universe'],
                 name='unique_name_per_universe',
-                # violation_error_message="A location with this name already exists in this universe!"
+            ),
+            models.UniqueConstraint(
+                fields=['slug', 'universe'],
+                name='unique_location_slug_per_universe',
             )
         ]
 
+
     def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(f"{self.universe.slug}-{self.name}")
+        self.slug = slugify(f"{self.universe.slug}-{self.name}")
         super().save(*args, **kwargs)
+
+
 
     def get_descendant_pks(self):
         pks = []

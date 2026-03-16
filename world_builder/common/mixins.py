@@ -1,10 +1,53 @@
 from django import forms
+from django.contrib import messages
+from django.shortcuts import redirect, get_object_or_404
+
+from characters.models import Character
+
+
+class CharacterObjectMixin:
+    def get_object(self, queryset=None):
+        return get_object_or_404(
+            Character.objects.select_related('universe', 'location'),
+            universe__slug=self.kwargs["universe_slug"],
+            slug=self.kwargs["slug"],
+        )
+
+class MessageCreateUpdateViewMixin:
+    success_message_action = 'saved'
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        model_name = self.object._meta.verbose_name.title()
+        messages.success(self.request, f'{model_name} "{self.object}" was {self.success_message_action} successfully!')
+        return response
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Please correct the errors below.')
+        return super().form_invalid(form)
+
+
+class ConfirmDeleteViewMixin:
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form()
+
+        if form.is_valid():
+            name = str(self.object)
+            model_name = self.object._meta.verbose_name.title()
+
+            self.object.delete()
+            messages.success(request, message=f'{model_name} "{name}" was deleted successfully.')
+            return redirect(self.get_success_url())
+        else:
+            messages.error(request, message='Please review the form before deleting.')
+            return self.form_invalid(form)
+
+
+
 
 class NameLengthMixin:
-    default_min_length = 2
-
-    def _check_name_length(self, field_name: str, min_length: int = None, field_label: str = None):
-        min_length = min_length or self.default_min_length
+    def _check_name_length(self, field_name: str, min_length: int = 2, field_label: str = None):
         name = self.cleaned_data.get(field_name)
         label = field_label or field_name.replace('_', ' ').title()
 
@@ -14,28 +57,4 @@ class NameLengthMixin:
             )
 
         return name
-
-
-class TimestampFormMixin:
-    created_at = forms.DateTimeField(
-        label="Date Created (Read-only)",
-        disabled=True,
-        required=False,
-        widget=forms.DateTimeInput(attrs={'class': 'form-control', 'readonly': True})
-    )
-    updated_at = forms.DateTimeField(
-        label="Last Updated (Read-only)",
-        disabled=True,
-        required=False,
-        widget=forms.DateTimeInput(attrs={'class': 'form-control', 'readonly': True})
-    )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        if hasattr(self, 'instance') and self.instance.pk:
-            if 'created_at' in self.fields and hasattr(self.instance, 'created_at'):
-                self.fields['created_at'].initial = self.instance.created_at
-            if 'updated_at' in self.fields and hasattr(self.instance, 'updated_at'):
-                self.fields['updated_at'].initial = self.instance.updated_at
 
