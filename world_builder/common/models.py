@@ -29,12 +29,6 @@ class NameModel(BaseModel):
         validators=[NameValidator]
     )
 
-    slug = models.SlugField(
-        unique=True,
-        blank=True,
-        editable=False,
-    )
-
     class Meta(BaseModel.Meta):
         abstract = True
 

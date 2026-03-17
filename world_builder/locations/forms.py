@@ -14,7 +14,7 @@ class LocationBaseForm(NameLengthMixin, forms.ModelForm):
         labels = {
             'name': 'Location Name',
             'image_url': 'Image Link (Optional)',
-            'type': 'Type (Optional)',
+            'type': 'Location Type',
             'description': 'Description',
             'universe': 'Associated Universe',
             'parent_location': 'Located Within (Optional)',
@@ -23,7 +23,7 @@ class LocationBaseForm(NameLengthMixin, forms.ModelForm):
         help_texts = {
             'name': 'Enter a unique name for the location.',
             'image_url': 'Provide a direct link to an image file (JPG, JPEG, PNG, GIF, WEBP, SVG).',
-            'tyoe': '',
+            'type': 'Select the type that best describes this location (e.g., Planet, Continent, City).',
             'description': 'Give some background details about your location.',
             'universe': 'You can select the associated universe.',
         }
@@ -57,6 +57,9 @@ class LocationBaseForm(NameLengthMixin, forms.ModelForm):
                 'max_length': 'That name is a bit too long. The limit is 100 characters.',
                 'required': 'Please give your location a name.'
             },
+            'type': {
+                'required': 'Please select a location type.'
+            },
             'description': {
                 'required': 'Every location needs a backstory.',
             }
@@ -68,12 +71,11 @@ class LocationBaseForm(NameLengthMixin, forms.ModelForm):
 
 
         if self.instance and self.instance.pk:
-            universe = self.instance.universe
             excluded_pks = self.instance.get_descendant_pks()
             excluded_pks.append(self.instance.pk)
 
             self.fields['parent_location'].queryset = Location.objects.filter(
-                universe=universe
+                universe=self.instance.universe
             ).exclude(pk__in=excluded_pks)
 
         elif 'universe' in self.data:
@@ -104,7 +106,7 @@ class LocationBaseForm(NameLengthMixin, forms.ModelForm):
         universe = self.cleaned_data.get('universe')
 
         if name and universe:
-            generated_slug = slugify(f"{universe.slug}-{name}")
+            generated_slug = slugify(name)
 
             duplicate = Location.objects.filter(
                 Q(name__iexact=name) | Q(slug=generated_slug),
@@ -116,7 +118,7 @@ class LocationBaseForm(NameLengthMixin, forms.ModelForm):
                     self.add_error(
                         field='name',
                         error=f"A location named '{name}' already exists in {universe.name}."
-                                   )
+                    )
                 else:
                     self.add_error(
                         field='name',

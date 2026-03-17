@@ -22,7 +22,7 @@ class CharacterBaseForm(NameLengthMixin, forms.ModelForm):
         }
         help_texts = {
             'first_name': 'The given name of your character.',
-            'last_name': 'Family name, title, or house name.',
+            'last_name': 'Surname, noble house, or identifying epithet.',
             'image_url': 'Direct link to a portrait or concept art (JPG, JPEG, PNG, GIF, WEBP, SVG).',
             'role': 'Define their place in the world.',
             'description': 'Describe their personality, appearance, or history.',

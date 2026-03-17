@@ -14,25 +14,35 @@ class Universe(NameModel):
         blank=True
     )
 
+    slug = models.SlugField(
+        unique=True,
+        blank=True,
+        editable=False,
+    )
+
     class Meta(NameModel.Meta):
         constraints = [
             models.UniqueConstraint(
                 fields=['name'],
-                name='unique_universe_name',
-                # violation_error_message="A universe with this name already exists."
-
+                name='unique_universe_name'
             ),
             models.UniqueConstraint(
                 fields=['slug'],
-                name='unique_universe_slug',
-                # violation_error_message="A universe with a similar name already exists in this universe."
-
+                name='unique_universe_slug'
             )
         ]
 
-    # maybe make it imposible to change the name?
+
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.name)
+        base_slug = slugify(self.name)
+
+        if not self.pk:
+            self.slug = base_slug
+        else:
+            old_instance = Universe.objects.get(pk=self.pk)
+            if old_instance.name != self.name:
+                self.slug = base_slug
+
         super().save(*args, **kwargs)
 
 

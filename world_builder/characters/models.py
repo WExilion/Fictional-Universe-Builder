@@ -57,23 +57,57 @@ class Character(BaseModel):
     def __str__(self):
         return self.full_name
 
-
-    # Names being allowed to duplicate.
-    def save(self, *args, **kwargs):
-        base_slug = slugify(f"{self.first_name}-{self.last_name}")
-
+    def generate_slug(self, base_slug):
         slug = base_slug
         counter = 1
 
         qs = Character.objects.filter(universe=self.universe).exclude(pk=self.pk)
-
         while qs.filter(slug=slug).exists():
             slug = f"{base_slug}-{counter}"
             counter += 1
 
-        self.slug = slug
+        return slug
+
+    def save(self, *args, **kwargs):
+        base_slug = slugify(f"{self.first_name}-{self.last_name}")
+
+        if not self.pk:
+            self.slug = self.generate_slug(base_slug)
+        else:
+            old_instance = Character.objects.get(pk=self.pk)
+            if (old_instance.first_name != self.first_name or
+                    old_instance.last_name != self.last_name or
+                    old_instance.universe != self.universe):
+                self.slug = self.generate_slug(base_slug)
+
+        # if not self.slug or not self.slug.startswith(target_base):
+        #     self.slug = self.generate_slug(target_base)
 
         super().save(*args, **kwargs)
+
+
+        # self.slug = self.generate_slug()
+        # super().save(*args, **kwargs)
+
+    # Names being allowed to duplicate.
+
+
+
+    # def save(self, *args, **kwargs):
+    #     base_slug = slugify(f"{self.first_name}-{self.last_name}")
+    #
+    #     slug = base_slug
+    #     counter = 1
+    #
+    #     qs = Character.objects.filter(universe=self.universe).exclude(pk=self.pk)
+    #
+    #     while qs.filter(slug=slug).exists():
+    #         slug = f"{base_slug}-{counter}"
+    #         counter += 1
+    #
+    #     self.slug = slug
+    #
+    #     super().save(*args, **kwargs)
 
 
 

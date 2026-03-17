@@ -26,6 +26,13 @@ class Location(NameModel):
         related_name='sub_locations',
     )
 
+    slug = models.SlugField(
+        unique=False,
+        blank=True,
+        editable=False,
+    )
+
+
     class Meta(NameModel.Meta):
         constraints = [
             models.UniqueConstraint(
@@ -40,22 +47,33 @@ class Location(NameModel):
 
 
     def save(self, *args, **kwargs):
-        self.slug = slugify(f"{self.universe.slug}-{self.name}")
+        base_slug = slugify(self.name)
+
+        if not self.pk:
+            self.slug = base_slug
+        else:
+            old_instance = Location.objects.get(pk=self.pk)
+            if (old_instance.name != self.name or
+                    old_instance.universe != self.universe):
+                self.slug = base_slug
+
         super().save(*args, **kwargs)
 
 
 
     def get_descendant_pks(self):
-        pks = []
-        for child in self.sub_locations.all():
-            pks.append(child.pk)
-            pks.extend(child.get_descendant_pks())
-        return pks
+        locations_pks = []
+        queue = list(self.sub_locations.values_list('pk', flat=True))
+        while queue:
+            locations_pks.extend(queue)
+            queue = list(self.__class__.objects.filter(parent_location__in=queue).values_list('pk', flat=True))
+        return locations_pks
 
 
     def get_full_path(self):
         parts = [self.name]
         parent = self.parent_location
+
         while parent is not None:
             parts.append(parent.name)
             parent = parent.parent_location

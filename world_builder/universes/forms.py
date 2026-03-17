@@ -76,7 +76,7 @@ class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
 
 
     def clean_name(self):
-        name = self._check_name_length(field_name='name', min_length=8, field_label='Universe Name')
+        name = self._check_name_length(field_name='name', min_length=4, field_label='Universe Name')
 
         generated_slug = slugify(name)
 
@@ -124,7 +124,6 @@ class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
 
         new_genre_is_valid = new_genre and not self._errors.get('new_genre')
         total = len(genres) + (1 if new_genre_is_valid else 0)
-        # total = len(genres) + (1 if new_genre else 0)
 
         if total > 6:
             self.add_error(
