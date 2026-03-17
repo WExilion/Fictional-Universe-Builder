@@ -3,12 +3,31 @@ from django.contrib import messages
 from django.shortcuts import redirect, get_object_or_404
 
 from characters.models import Character
+from locations.models import Location
 
 
-class CharacterObjectMixin:
+class LocationObjectViewMixin:
     def get_object(self, queryset=None):
         return get_object_or_404(
-            Character.objects.select_related('universe', 'location'),
+            Location.objects.select_related(
+                'universe',
+                'parent_location',
+                'parent_location__parent_location',
+            ),
+            universe__slug=self.kwargs["universe_slug"],
+            slug=self.kwargs["slug"],
+        )
+
+
+class CharacterObjectViewMixin:
+    def get_object(self, queryset=None):
+        return get_object_or_404(
+            Character.objects.select_related(
+                'universe',
+                'location',
+                'location__parent_location',
+                'location__parent_location__parent_location',
+            ),
             universe__slug=self.kwargs["universe_slug"],
             slug=self.kwargs["slug"],
         )
