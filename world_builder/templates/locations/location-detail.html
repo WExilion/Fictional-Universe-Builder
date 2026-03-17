@@ -1,0 +1,107 @@
+{% extends 'shared/base.html' %}
+
+{% block title %}{{ location.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                {% if location.image_url %}
+                    <img src="{{ location.image_url }}" class="card-img-top img-fluid" alt="{{ location.name }}">
+                {% else %}
+                    <div class="card-img-top bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center" style="height:180px;">
+                        <span class="text-muted small">No Image Available</span>
+                    </div>
+                {% endif %}
+                <div class="card-body">
+                    <h1 class="h3 card-title">{{ location.name }}</h1>
+                    <hr>
+                    {% if location.type %}
+                        <span class="badge bg-dark mb-2">{{ location.get_type_display }}</span>
+                    {% endif %}
+                    <p><strong>Universe:</strong>
+                        <a href="{% url 'universes:detail' slug=location.universe.slug %}">{{ location.universe.name }}</a>
+                    </p>
+                    {% if location.parent_location %}
+                        <p><strong>Part of:</strong>
+                            <a href="{% url 'locations:detail' universe_slug=location.parent_location.universe.slug slug=location.parent_location.slug %}">{{ location.parent_location.get_full_path }}</a>
+                        </p>
+                    {% endif %}
+                    <p><strong>Created:</strong> {{ location.created_at|date:"F d, Y" }}</p>
+                    <p><strong>Last Updated:</strong> {{ location.updated_at|timesince }} ago</p>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'locations:update' universe_slug=location.universe.slug slug=location.slug %}" class="btn btn-outline-dark">Edit Location</a>
+                        <a href="{% url 'locations:delete' universe_slug=location.universe.slug slug=location.slug %}" class="btn btn-outline-danger">Delete Location</a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'universes:list' %}">Universes</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'universes:detail' slug=location.universe.slug %}">{{ location.universe.name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'locations:list' %}">Locations</a></li>
+                    <li class="breadcrumb-item active">{{ location.name }}</li>
+                </ol>
+            </nav>
+
+            <div class="mb-5">
+                <h3>Description</h3>
+                <div class="p-4 bg-white border rounded shadow-sm">
+                    <div class="lead">{{ location.description|linebreaks }}</div>
+                </div>
+            </div>
+
+
+            {% with sub_locations=location.sub_locations.all characters=location.characters.all %}
+            <ul class="nav nav-tabs mb-3" id="universeTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="sub-locations-tab" data-bs-toggle="tab" data-bs-target="#sub-locations" type="button" role="tab">Sub-locations ({{ sub_locations|length }})</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="characters-tab" data-bs-toggle="tab" data-bs-target="#characters" type="button" role="tab">Residents ({{ characters|length }})</button>
+                </li>
+            </ul>
+            <div class="tab-content" id="universeTabsContent">
+                <div class="tab-pane fade show active" id="sub-locations" role="tabpanel">
+                    <div class="list-group list-group-flush border rounded">
+                        {% for sub in sub_locations %}
+                            <a href="{% url 'locations:detail' universe_slug=location.universe.slug slug=sub.slug %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                {{ sub.name }}
+                                <span class="badge bg-secondary rounded-pill">{{ sub.get_type_display }}</span>
+                            </a>
+                        {% empty %}
+                            <div class="p-3 text-muted">No sub-locations found.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="characters" role="tabpanel">
+                    <div class="list-group list-group-flush border rounded">
+                        {% for character in characters %}
+                            <a href="{% url 'characters:detail' universe_slug=character.universe.slug slug=character.slug %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                {{ character.full_name }}
+                                {% if character.role %}
+                                    <span class="badge bg-secondary rounded-pill">{{ character.role }}</span>
+                                {% endif %}
+                            </a>
+                        {% empty %}
+                            <div class="p-3 text-muted">No characters currently at this location.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endwith %}
+
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

@@ -1,0 +1,97 @@
+{% extends 'shared/base.html' %}
+
+{% block title %}{% if universe %}Edit{% else %}Create{% endif %} Universe{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h2 class="h4 mb-0">{% if universe %}Edit Universe: {{ universe.name }}{% else %}Create New Universe{% endif %}</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">{{ form.name.label }}</label>
+                                {{ form.name }}
+                                <div class="form-text">{{ form.name.help_text }}</div>
+                                {{ form.name.errors }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="{{ form.image_url.id_for_label }}" class="form-label fw-bold">{{ form.image_url.label }}</label>
+                                {{ form.image_url }}
+                                <div class="form-text">{{ form.image_url.help_text }}</div>
+                                {{ form.image_url.errors }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">{{ form.description.label }}</label>
+                                {{ form.description }}
+                                <div class="form-text">{{ form.description.help_text }}</div>
+                                {{ form.description.errors }}
+                            </div>
+                        </div>
+
+                        <div class="card bg-light mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">Categorization</h5>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Select Existing Genres</label>
+                                    <div class="genre-grid d-flex flex-wrap gap-3">
+                                        {{ form.genres }}
+                                    </div>
+                                    <div class="form-text">{{ form.genres.help_text }}</div>
+                                    {{ form.genres.errors }}
+                                </div>
+                                <hr>
+                                <div class="mb-0">
+                                    <label for="{{ form.new_genre.id_for_label }}" class="form-label fw-bold">Or Add a New Genre</label>
+                                    {{ form.new_genre }}
+                                    <div class="form-text">{{ form.new_genre.help_text }}</div>
+                                    {{ form.new_genre.errors }}
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if universe %}
+                            <div class="card bg-light border-0 mt-4 mb-4">
+                                <div class="card-body py-2">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-2 mb-md-0">
+                                            <label class="form-label small text-muted mb-1">Date Created</label>
+                                            <p class="form-control-plaintext">{{ universe.created_at|date:"d M Y, H:i" }}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label small text-muted mb-1">Last Updated</label>
+                                            <p class="form-control-plaintext">{{ universe.updated_at|date:"d M Y, H:i" }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {{ form.non_field_errors }}
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{% if universe %}{% url 'universes:detail' slug=universe.slug %}{% else %}{% url 'universes:list' %}{% endif %}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-dark px-4">
+                                {% if universe %}Update Universe{% else %}Save Universe{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

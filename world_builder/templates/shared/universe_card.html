@@ -1,0 +1,24 @@
+{% load genre_tags %}
+<div class="col-md-4 mb-4">
+    <div class="card h-100">
+        {% if universe.image_url %}
+            <img src="{{ universe.image_url }}" class="card-img-top" alt="{{ universe.name }}" style="height: 180px; object-fit: cover;">
+        {% else %}
+            <div class="card-img-top bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center" style="height: 180px;">
+                <span class="text-muted small">No Image Available</span>
+            </div>
+        {% endif %}
+        <div class="card-body">
+            <h5 class="card-title">{{ universe.name }}</h5>
+            <p class="card-text text-truncate">{{ universe.description }}</p>
+            <div class="mt-2">
+                {% for genre in universe.genres.all %}
+                    <span class="badge {{ genre.name|genre_color }}">{{ genre.name }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'universes:detail' slug=universe.slug %}" class="btn btn-sm btn-outline-dark">View Details</a>
+        </div>
+    </div>
+</div>

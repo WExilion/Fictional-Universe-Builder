@@ -1,0 +1,65 @@
+{% extends 'shared/base.html' %}
+
+{% block title %}{{ character.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                {% if character.image_url %}
+                    <img src="{{ character.image_url }}" class="card-img-top img-fluid" alt="{{ character.full_name }}">
+                {% else %}
+                    <div class="card-img-top bg-secondary bg-opacity-10 d-flex align-items-center justify-content-center" style="height:180px;">
+                        <span class="text-muted small">No Image Available</span>
+                    </div>
+                {% endif %}
+
+                <div class="card-body">
+                    <h1 class="h3 card-title">{{ character.full_name }}</h1>
+                    <hr>
+                    {% if character.role %}
+                        <span class="badge bg-dark mb-2">{{ character.role }}</span>
+                    {% endif %}
+                    <p><strong>Universe:</strong>
+                        <a href="{% url 'universes:detail' slug=character.universe.slug %}">{{ character.universe.name }}</a>
+                    </p>
+                    {% if character.location %}
+                        <p><strong>Current Location:</strong>
+                            <a href="{% url 'locations:detail' universe_slug=character.location.universe.slug slug=character.location.slug %}">{{ character.location.get_full_path }}</a>
+                        </p>
+                    {% endif %}
+                    <p><strong>Created:</strong> {{ character.created_at|date:"F d, Y" }}</p>
+                    <p><strong>Last Updated:</strong> {{ character.updated_at|timesince }} ago</p>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'characters:update' universe_slug=character.universe.slug slug=character.slug %}" class="btn btn-outline-dark">Edit Character</a>
+                        <a href="{% url 'characters:delete' universe_slug=character.universe.slug slug=character.slug %}" class="btn btn-outline-danger">Delete Character</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+
+
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'universes:list' %}">Universes</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'universes:detail' slug=character.universe.slug %}">{{ character.universe.name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'characters:list' %}">Characters</a></li>
+                    <li class="breadcrumb-item active">{{ character.full_name }}</li>
+                </ol>
+            </nav>
+
+            <div class="mb-5">
+                <h3>Character Bio & History</h3>
+                <div class="p-4 bg-white border rounded shadow-sm">
+                    <div class="lead">{{ character.description|linebreaks }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

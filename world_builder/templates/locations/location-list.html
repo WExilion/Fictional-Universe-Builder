@@ -1,0 +1,68 @@
+{% extends 'shared/base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Locations</h1>
+        <a href="{% url 'locations:create' %}" class="btn btn-dark">Create New Location</a>
+    </div>
+
+
+    <div class="row mb-4">
+        <form method="GET" class="d-flex gap-2 mb-3">
+            {{ form.search }}
+            {{ form.universe }}
+            <button class="btn btn-outline-dark" type="submit">Search</button>
+            {% if request.GET.search or request.GET.universe %}
+                <a href="{% url 'locations:list' %}" class="btn btn-outline-secondary">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3 text-muted small">
+        <span>{{ page_obj.paginator.count }} location{{ page_obj.paginator.count|pluralize }} found</span>
+        <div class="d-flex gap-3">
+            <a href="?sort=-created_at&search={{ request.GET.search }}&universe={{ request.GET.universe }}" class="text-decoration-none {% if sort == '-created_at' %}fw-semibold text-dark{% else %}text-muted{% endif %}">Newest</a>
+            <a href="?sort=name&search={{ request.GET.search }}&universe={{ request.GET.universe }}" class="text-decoration-none {% if sort == 'name' %}fw-semibold text-dark{% else %}text-muted{% endif %}">A–Z</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            {% for location in locations %}
+                <div class="d-flex justify-content-between align-items-center border-bottom py-3 px-2">
+                    <div class="d-flex align-items-center gap-3">
+                        <div>
+                            <a href="{% url 'locations:detail' universe_slug=location.universe.slug slug=location.slug %}"
+                               class="fw-semibold text-dark text-decoration-none">
+                                {{ location.name }}
+                            </a>
+                            {% if location.parent_location %}
+                                <span class="text-muted small ms-1">→ {{ location.parent_location.name }}</span>
+                            {% endif %}
+                            <div class="text-muted small">
+                                <span>{{ location.universe.name }}</span>
+                                {% if location.description %}
+                                    · <span>{{ location.description|truncatechars:60 }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'locations:update' universe_slug=location.universe.slug slug=location.slug %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        <a href="{% url 'locations:delete' universe_slug=location.universe.slug slug=location.slug %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        <a href="{% url 'locations:detail' universe_slug=location.universe.slug slug=location.slug %}" class="btn btn-sm btn-outline-dark">View</a>
+                    </div>
+                </div>
+            {% empty %}
+                <p class="text-muted">No locations yet. <a href="{% url 'locations:create' %}">Create the first one!</a></p>
+            {% endfor %}
+        </div>
+    </div>
+
+
+    {% include 'shared/pagination.html' %}
+</div>
+{% endblock %}

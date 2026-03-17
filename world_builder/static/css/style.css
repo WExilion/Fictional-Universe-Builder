@@ -1,0 +1,130 @@
+/*body {*/
+    /*padding-top: 0px; !* Navbar height *!*/
+/*}*/
+
+/*main {*/
+/*    padding-top: 2rem;*/
+/*    padding-bottom: 2rem;*/
+/*}*/
+
+/*:root {*/
+/*    --bs-btn-bg: #212529;*/
+/*    --bs-btn-border-color: #212529;*/
+/*    --bs-btn-hover-bg: #343a40;*/
+/*}*/
+
+
+.genre-checkbox {
+    columns: 3;
+    column-gap: 1rem;
+}
+
+.genre-checkbox ul {
+    list-style: none;
+    padding: 0;
+    display: contents;
+}
+
+.genre-checkbox li {
+    break-inside: avoid;
+    list-style: none;
+    margin-bottom: 4px;
+    margin-right: 15px;
+}
+
+
+.genre-checkbox {
+    columns: 1;
+}
+
+@media (min-width: 576px) {
+    .genre-checkbox {
+        columns: 2;
+    }
+}
+
+@media (min-width: 992px) {
+    .genre-checkbox {
+        columns: 3;
+    }
+}
+
+textarea.form-control {
+    min-height: 150px;
+}
+
+.genre-checkbox input {
+    margin-right: 5px;
+}
+
+
+
+.text-bg-purple {
+    background-color: #6f42c1 !important;
+    color: #fff !important;
+}
+
+.text-bg-pink {
+    background-color: #d63384 !important;
+    color: #fff !important;
+}
+
+
+
+.g-danger  {
+    background: #FCEBEB;
+    color: #791F1F;
+    border-radius: 99px;
+}
+.g-warning {
+    background: #FAEEDA;
+    color: #633806;
+    border-radius: 99px;
+}
+.g-primary {
+    background: #E6F1FB;
+    color: #0C447C;
+    border-radius: 99px;
+}
+.g-secondary {
+    background: #E8EAF0;
+    color: #2C3060;
+    border-radius: 99px;
+}
+.g-success {
+    background: #EAF3DE;
+    color: #27500A;
+    border-radius: 99px;
+}
+.g-info    {
+    background: #E1F5EE;
+    color: #085041;
+    border-radius: 99px;
+}
+.g-dark    {
+    background: #D3D1C7;
+    color: #2C2C2A;
+    border-radius: 99px;
+}
+.g-mature {
+    background: #FAECE7;
+    color: #4A1B0C;
+    border-radius: 99px;
+}
+.g-purple  {
+    background: #EEEDFE;
+    color: #3C3489;
+    border-radius: 99px;
+}
+.g-pink    {
+    background: #FBEAF0;
+    color: #4B1528;
+    border-radius: 99px;
+}
+.g-default {
+    background: #F1EFE8;
+    color: #444441;
+    border-radius: 99px;
+}
+
+
