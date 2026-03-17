@@ -11,13 +11,10 @@ from universes.models import Universe, Genre
 class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
     genres = forms.ModelMultipleChoiceField(
         queryset=Genre.objects.all(),
-        required=True,
+        required=False,
         label="Select Genres",
         help_text="Pick up to 6 genres that best describe your universe. You can combine multiple.",
         widget = forms.CheckboxSelectMultiple(attrs={'class': 'genre-checkbox'}),
-        error_messages = {
-            'required': 'Please select at least one genre to help define your universe.'
-        }
     )
     new_genre = forms.CharField(
         max_length=50,
@@ -107,6 +104,12 @@ class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
         cleaned_data = super().clean()
         genres = cleaned_data.get('genres') or []
         new_genre = cleaned_data.get('new_genre')
+
+        if not genres and not new_genre:
+            self.add_error(
+                'genres',
+                'Please select at least one genre or add a new one to define your universe.'
+            )
 
         if new_genre:
             genre_names = [g.name.lower() for g in genres]
