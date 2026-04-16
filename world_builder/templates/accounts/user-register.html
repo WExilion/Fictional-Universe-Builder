@@ -1,0 +1,58 @@
+{% extends 'shared/base.html' %}
+
+{% block title %}Join FictionBuilder{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="text-center mb-4">
+                <h1>✍️ FictionBuilder</h1>
+                <p class="text-muted">Start building your fictional worlds</p>
+            </div>
+
+
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h2 class="h5 mb-0">Create Account</h2>
+                </div>
+
+                <div class="card-body p-4">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% include 'shared/non_field_errors.html' %}
+
+                        {% for field in form %}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label fw-bold">
+                                    {{ field.label }}
+                                </label>
+
+                                {{ field }}
+
+                                {% if field.help_text %}
+                                    <div class="form-text">{{ field.help_text }}</div>
+                                {% endif %}
+
+                                {% include 'shared/field_errors.html' %}
+                            </div>
+                        {% endfor %}
+
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-dark">Create Account</button>
+                        </div>
+                    </form>
+
+                    <hr>
+
+                    <p class="text-center mb-0 text-muted">
+                        Already have an account?
+                        <a href="{% url 'accounts:login' %}">Log in here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
