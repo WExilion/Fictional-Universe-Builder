@@ -1,0 +1,81 @@
+{% extends 'shared/base.html' %}
+
+{% block title %}{{ story.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h1 class="h3 card-title">{{ story.title }}</h1>
+                    <hr>
+                    <p><strong>Creator:</strong> <a href="{% url 'accounts:detail' pk=story.owner.pk %}">{{ story.owner.username }}</a></p>
+                    <p>
+                        <strong>Universe:</strong>
+                        <a href="{% url 'universes:detail' slug=story.universe.slug %}">{{ story.universe.name }}</a>
+                    </p>
+                    <p>
+                    <strong>Status: </strong>
+                    {% if story.is_published %}
+                        <span class="badge bg-dark">Published</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Draft</span>
+                    {% endif %}
+                    </p>
+                    <p><strong>Created:</strong> {{ story.created_at|date:"F d, Y" }}</p>
+                    <p><strong>Last Updated:</strong> {{ story.updated_at|timesince }} ago</p>
+
+                    {% if can_manage_object %}
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'stories:update' universe_slug=story.universe.slug slug=story.slug %}" class="btn btn-outline-dark">Edit Story</a>
+                        <a href="{% url 'stories:delete' universe_slug=story.universe.slug slug=story.slug %}" class="btn btn-outline-danger">Delete Story</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        Featured Characters
+                        <span class="badge bg-secondary">{{ story.characters.count }}</span>
+                    </h5>
+                    <hr>
+                    <div class="list-group list-group-flush">
+                        {% for character in story.characters.all %}
+                            <a href="{% url 'characters:detail' universe_slug=character.universe.slug slug=character.slug %}"
+                               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-0">
+                                {{ character.full_name }}
+                                {% if character.role %}
+                                    <span class="badge bg-dark rounded-pill">{{ character.role }}</span>
+                                {% endif %}
+                            </a>
+                        {% empty %}
+                            <p class="text-muted small mb-0">No characters featured in this story.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'universes:list' %}">Universes</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'universes:detail' slug=story.universe.slug %}">{{ story.universe.name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'stories:list' %}">Stories</a></li>
+                    <li class="breadcrumb-item active">{{ story.title }}</li>
+                </ol>
+            </nav>
+
+            <h3>Story Content</h3>
+            <div class="p-4 bg-white border rounded shadow-sm mb-5">
+                <div class="lead">{{ story.content|linebreaks }}</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
