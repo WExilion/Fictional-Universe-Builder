@@ -20,6 +20,8 @@ from django.contrib import admin
 from django.urls import path, include
 
 handler404 = 'common.views.custom_404'
+handler403 = 'common.views.custom_403'
+handler400 = 'common.views.custom_400'
 handler500 = 'common.views.custom_500'
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,7 +30,10 @@ urlpatterns = [
     path('universes/', include('universes.urls')),
     path('stories/', include('stories.urls')),
     path('characters/', include('characters.urls')),
-    path('locations/', include('locations.urls'))
+    path('locations/', include('locations.urls')),
+
+    path('api/universes/', include('universes.api_urls')),
+    path('api/stories/', include('stories.api_urls')),
 
 ]
 
