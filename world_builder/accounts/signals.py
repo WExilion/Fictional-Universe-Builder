@@ -23,11 +23,6 @@ def assign_default_group(sender, instance, created, **kwargs):
         instance.groups.add(members_group)
 
 
-# @receiver(post_migrate)
-# def create_default_groups(sender, **kwargs):
-#     Group.objects.get_or_create(name='Members')
-#     Group.objects.get_or_create(name='Moderators')
-
 @receiver(post_migrate)
 def setup_groups_and_permissions(sender, **kwargs):
     members_group, _ = Group.objects.get_or_create(name='Members')
@@ -66,3 +61,19 @@ def setup_groups_and_permissions(sender, **kwargs):
 
         moderators_group.permissions.add(*moderator_perms)
         members_group.permissions.add(*member_perms)
+
+    try:
+        profile_content_type = ContentType.objects.get(app_label='accounts', model='profile')
+    except ContentType.DoesNotExist:
+        return
+
+    profile_permissions = Permission.objects.filter(content_type=profile_content_type)
+
+    members_group.permissions.add(
+        *profile_permissions.filter(codename__in={'view_profile'})
+    )
+
+    moderators_group.permissions.add(
+        *profile_permissions.filter(codename__in={'view_profile', 'change_profile'})
+    )
+

@@ -1,4 +1,5 @@
 import re
+from urllib.parse import urlparse
 
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import UploadedFile
@@ -27,14 +28,17 @@ GenreNameValidator = RegexValidator(
 class ImageURLValidator:
     def __init__(self, allowed_extensions: list[str] = None, message: str = None) -> None:
         self.allowed_extensions = allowed_extensions or ALLOWED_IMAGE_TYPES
-        self.pattern = rf'\.({"|".join(self.allowed_extensions)})(\?.*)?$'
+        self.pattern = rf'\.({"|".join(self.allowed_extensions)})$'
+        # self.pattern = rf'\.({"|".join(self.allowed_extensions)})(\?.*)?$'
         self.message = message or (
             f"The URL must point to a direct image ({', '.join(self.allowed_extensions)}). "
-            "Tip: right-click an image and select 'Copy image address'."
+            "Tip: Right-click the image and select 'Open image in new tab'. "
+            "If the image loads alone, copy the URL from that tab's address bar"
         )
 
     def __call__(self, value: str) -> None:
-        if not re.search(self.pattern, value, re.IGNORECASE):
+        parsed = urlparse(value)
+        if not re.search(self.pattern, parsed.path, re.IGNORECASE):
             raise ValidationError(self.message)
 
 

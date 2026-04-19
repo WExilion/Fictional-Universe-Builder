@@ -10,30 +10,53 @@ class SetOwnerMixin:
         form.instance.owner = self.request.user
         return super().form_valid(form)
 
-class CheckOwnerOrModeratorMixin(UserPassesTestMixin):
+
+class ObjectManagementMixin:
+    moderator_group_name = "Moderators"
+    def get_permission_object(self):
+        if hasattr(self, "object") and self.object is not None:
+            return self.object
+        return self.get_object()
+
+    def user_can_manage_object(self, obj=None):
+        user = self.request.user
+
+        if not user.is_authenticated:
+            return False
+
+        obj = obj or self.get_permission_object()
+        return (
+            user.is_superuser
+            or user == obj.owner
+            or user.groups.filter(name=self.moderator_group_name).exists()
+        )
+
+class CanManageObjectRequiredMixin(ObjectManagementMixin, UserPassesTestMixin):
+    raise_exception = True
+
     def get_object(self, queryset=None):
         if not hasattr(self, '_cached_object'):
             self._cached_object = super().get_object(queryset)
         return self._cached_object
 
     def test_func(self):
-        user = self.request.user
-        obj = self.get_object()
+        return self.user_can_manage_object()
 
-        return user.is_authenticated and (user == obj.owner or user.groups.filter(name='Moderators').exists())
-
-
-class ManageObjectPermissionMixin:
-    def get_can_manage_object(self):
-        user = self.request.user
-        obj = self.object
-
-        return user.is_authenticated and (user == obj.owner or user.groups.filter(name='Moderators').exists())
-
+class CanManageObjectContextMixin(ObjectManagementMixin):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['can_manage_object'] = self.get_can_manage_object()
+        context["can_manage_object"] = self.user_can_manage_object()
         return context
+
+class UnpublishedAccessMixin:
+    moderator_group_name = "Moderators"
+    def can_view_unpublished(self):
+        user = self.request.user
+        return user.is_authenticated and (
+            user.is_superuser
+            or user.groups.filter(name=self.moderator_group_name).exists()
+        )
+
 
 
 class FilterOwnerFormMixin:
@@ -105,11 +128,13 @@ class OwnerScopedFormMixin:
         return self.user is not None and self.user.groups.filter(name='Moderators').exists()
 
     def get_owner_for_queryset(self):
-        if not self.user:
+        user = self.user
+        if not user or not user.is_authenticated:
             return None
-        if self.instance.pk and self.is_moderator():
+
+        if self.instance.pk and (user.is_superuser or self.is_moderator()):
             return self.instance.owner
-        return self.user
+        return user
 
     def get_selected_universe_id(self):
         universe_raw = self.data.get('universe')
@@ -144,6 +169,7 @@ class SlugMixin:
     slug_field_name = 'slug'
     slug_source_field = None
     slug_related_field = 'universe'
+    slug_dependency_fields = None
 
     def get_slug_source_value(self):
         return getattr(self, self.slug_source_field)
@@ -151,23 +177,40 @@ class SlugMixin:
         return getattr(self, self.slug_related_field)
     def get_slug_related_id(self):
         return getattr(self, f"{self.slug_related_field}_id")
+    def get_slug_dependency_fields(self):
+        if self.slug_dependency_fields is not None:
+            return self.slug_dependency_fields
+        return (self.slug_source_field,)
+
 
 
     def save(self, *args, **kwargs):
         base_slug = slugify(self.get_slug_source_value())
+
         if not self.pk:
             slug = base_slug
         else:
+            dependency_fields = self.get_slug_dependency_fields()
             old_instance = type(self).objects.only(
-                self.slug_source_field, f"{self.slug_related_field}_id"
+                *dependency_fields,
+                f"{self.slug_related_field}_id",
                 # self.slug_source_field, self.slug_related_field
             ).get(pk=self.pk)
-            if (getattr(old_instance, self.slug_source_field) != self.get_slug_source_value() or
-                    getattr(old_instance, f"{self.slug_related_field}_id") != self.get_slug_related_id()):
-                    # getattr(old_instance, self.slug_related_field) != self.get_slug_related_value()):
+
+            source_changed = any(getattr(old_instance, field) != getattr(self, field) for field in dependency_fields)
+            related_changed = getattr(old_instance, f"{self.slug_related_field}_id") != self.get_slug_related_id()
+
+            if source_changed or related_changed:
                 slug = base_slug
             else:
                 slug = getattr(self, self.slug_field_name) or base_slug
+
+            # if (getattr(old_instance, self.slug_source_field) != self.get_slug_source_value() or
+            #         getattr(old_instance, f"{self.slug_related_field}_id") != self.get_slug_related_id()):
+            #         # getattr(old_instance, self.slug_related_field) != self.get_slug_related_value()):
+            #     slug = base_slug
+            # else:
+            #     slug = getattr(self, self.slug_field_name) or base_slug
 
         final_slug = slug
         counter = 1
@@ -175,7 +218,7 @@ class SlugMixin:
         while type(self).objects.filter(
                 **{
                     self.slug_field_name: final_slug,
-                    self.slug_related_field: self.get_slug_related_value()
+                    f"{self.slug_related_field}_id": self.get_slug_related_id()
                 }
         ).exclude(pk=self.pk).exists():
             final_slug = f"{slug}-{counter}"
@@ -186,17 +229,3 @@ class SlugMixin:
         super().save(*args, **kwargs)
 
 
-
-# class OwnerQuerysetMixin:
-#     def get_owner_for_queryset(self):
-#         user = getattr(self, 'user', None)
-#
-#         if not user:
-#             return None
-#
-#         is_moderator = user.groups.filter(name='Moderators').exists()
-#
-#         if self.instance.pk and is_moderator:
-#             return self.instance.owner
-#
-#         return user
