@@ -3,6 +3,7 @@ from django.core.validators import MinLengthValidator
 from django.db.models import Q
 from django.utils.text import slugify
 
+from common.choices import NAME_SORT_CHOICES
 from common.mixins import NameLengthMixin
 from common.validators import GenreNameValidator
 from universes.models import Universe, Genre
@@ -33,7 +34,6 @@ class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
 
     class Meta:
         model = Universe
-        # exclude = ['slug']
         fields = ['name', 'image_url', 'description', 'genres']
         labels = {
             'name': 'Universe Name',
@@ -43,7 +43,7 @@ class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
         }
         help_texts = {
             'name': 'Enter a unique name for your fictional setting.',
-            'image_url': 'Provide a direct link to an image (JPG, JPEG, PNG, GIF, WEBP, SVG).',
+            'image_url': 'Provide a direct link to an image (JPG, JPEG, PNG, WEBP).',
             'description': 'Provide a detailed background of your universe.',
         }
         widgets = {
@@ -97,57 +97,55 @@ class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
     def clean_new_genre(self):
         new_genre = self.cleaned_data.get('new_genre')
         if new_genre:
-            return new_genre.strip().title()
+            return new_genre.strip().title() # noqa
         return new_genre
 
     def clean(self):
         cleaned_data = super().clean()
-        genres = cleaned_data.get('genres') or []
-        new_genre = cleaned_data.get('new_genre')
+        genres = cleaned_data.get('genres') or [] # noqa
+        new_genre = cleaned_data.get('new_genre') # noqa
 
         if not genres and not new_genre:
             self.add_error(
-                'genres',
-                'Please select at least one genre or add a new one to define your universe.'
+                field='genres',
+                error='Please select at least one genre or add a new one to define your universe.'
             )
 
         if new_genre:
-            genre_names = [g.name.lower() for g in genres]
+            genres_lower = [g.name.lower() for g in genres]
 
-            if new_genre.lower() in genre_names:
+            if new_genre.lower() in genres_lower: # noqa
                 self.add_error(
                     field='new_genre',
                     error=f'"{new_genre}" is already selected above — no need to add it again.'
                 )
-            if Genre.objects.filter(name__iexact=new_genre).exists():
+            elif Genre.objects.filter(name__iexact=new_genre).exists():
                 self.add_error(
                     field='new_genre',
                     error=f'"{new_genre}" already exists in the genre list — select it from the checkboxes above.'
                 )
 
-        new_genre_is_valid = new_genre and not self._errors.get('new_genre')
+        new_genre_is_valid = new_genre and not self.has_error('new_genre')
         total = len(genres) + (1 if new_genre_is_valid else 0)
-
         if total > 6:
             self.add_error(
                 field='genres',
-                error=f'You selected {total} genres — please keep it to 6 or fewer in total.'
+                error=f'You selected {total} genres — choose up to 6 genres in total, including a new custom genre.'
             )
         return cleaned_data
 
 
     def save(self, commit=True):
         instance = super().save(commit=False)
+        new_genre_name = self.cleaned_data.get('new_genre')
 
         if commit:
             instance.save()
             self.save_m2m()
 
-            new_genre_name = self.cleaned_data.get("new_genre")
-
             if new_genre_name:
                 genre, _ = Genre.objects.get_or_create(name=new_genre_name)
-                instance.genres.add(genre)
+                instance.genres.add(genre) # noqa
 
         return instance
 
@@ -179,8 +177,17 @@ class SearchForm(forms.Form):
             'autocomplete': 'off',
         })
     )
+
     genre = forms.ModelChoiceField(
         queryset=Genre.objects.all(),
         required=False,
-        empty_label="All Genres"
+        empty_label="All Genres",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    sort = forms.ChoiceField(
+        choices=NAME_SORT_CHOICES,
+        required=False,
+        label='Sort By',
+        widget=forms.Select(attrs={'class': 'form-select'})
     )

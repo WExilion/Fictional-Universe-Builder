@@ -6,27 +6,32 @@
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Universes</h1>
-        <a href="{% url 'universes:create' %}" class="btn btn-dark">Create New Universe</a>
+        <a href="{% url 'universes:create' %}" class="btn btn-dark">New Universe</a>
     </div>
 
 
     <div class="row mb-4">
-        <form method="GET" class="d-flex gap-2 mb-3">
-            {{ form.search }}
-            {{ form.genre }}
-            <button class="btn btn-outline-dark" type="submit">Search</button>
-            {% if request.GET.search or request.GET.genre %}
-                <a href="{% url 'universes:list' %}" class="btn btn-outline-secondary">Clear</a>
-            {% endif %}
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col">
+                {{ search_form.search }}
+            </div>
+            <div class="col-auto">
+                {{ search_form.genre }}
+            </div>
+            <div class="col-auto">
+                {{ search_form.sort }}
+            </div>
+            <div class="col-auto d-flex gap-2">
+                {% if request.GET.search or request.GET.genre or request.GET.sort %}
+                    <a href="{% url 'universes:list' %}" class="btn btn-outline-secondary">Clear</a>
+                {% endif %}
+                <button class="btn btn-outline-dark" type="submit">Search</button>
+            </div>
         </form>
     </div>
 
     <div class="d-flex justify-content-between align-items-center mb-3 text-muted small">
         <span>{{ page_obj.paginator.count }} universe{{ page_obj.paginator.count|pluralize }} found</span>
-        <div class="d-flex gap-3">
-            <a href="?sort=-created_at&search={{ request.GET.search }}&genre={{ request.GET.genre }}" class="text-decoration-none {% if sort == '-created_at' %}fw-semibold text-dark{% else %}text-muted{% endif %}">Newest</a>
-            <a href="?sort=name&search={{ request.GET.search }}&genre={{ request.GET.genre }}" class="text-decoration-none {% if sort == 'name' %}fw-semibold text-dark{% else %}text-muted{% endif %}">A–Z</a>
-        </div>
     </div>
 
     <div class="row">
@@ -34,12 +39,12 @@
             {% include 'shared/universe_card.html' %}
         {% empty %}
             <div class="col-12">
-                <p class="text-muted">No universes yet. <a href="{% url 'universes:create' %}">Create the first one!</a></p>
+                <p class="text-muted">No universes matched your search. <a href="{% url 'universes:create' %}">Create one?</a></p>
             </div>
         {% endfor %}
     </div>
 
 
-    {% include 'shared/pagination.html' %}
+    {% include 'shared/pagination_universes.html' %}
 </div>
 {% endblock %}

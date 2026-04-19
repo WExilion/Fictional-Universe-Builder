@@ -1,6 +1,6 @@
 {% load genre_tags %}
 <div class="col-md-4 mb-4">
-    <div class="card h-100">
+    <div class="card h-100 shadow-sm hover-shadow border-0">
         {% if universe.image_url %}
             <img src="{{ universe.image_url }}" class="card-img-top" alt="{{ universe.name }}" style="height: 180px; object-fit: cover;">
         {% else %}
@@ -8,17 +8,36 @@
                 <span class="text-muted small">No Image Available</span>
             </div>
         {% endif %}
-        <div class="card-body">
-            <h5 class="card-title">{{ universe.name }}</h5>
-            <p class="card-text text-truncate">{{ universe.description }}</p>
-            <div class="mt-2">
+
+        <div class="card-body d-flex flex-column">
+            <div class="mb-2">
+                <h5 class="card-title mb-1">{{ universe.name }}</h5>
+
+                {% if request.user == universe.owner %}
+                    <span class="badge rounded-pill bg-dark-subtle text-dark border">Your Universe</span>
+                {% endif %}
+            </div>
+
+            <div class="mb-3 d-flex flex-wrap gap-1">
                 {% for genre in universe.genres.all %}
                     <span class="badge {{ genre.name|genre_color }}">{{ genre.name }}</span>
+                {% empty %}
+                    <span class="text-muted small">No genres</span>
                 {% endfor %}
             </div>
+
+            <p class="card-text mb-3">{{ universe.description|truncatechars:120 }}</p>
+
+            <small class="text-muted mt-auto">
+                Updated {{ universe.updated_at|timesince }} ago
+            </small>
         </div>
-        <div class="card-footer">
-            <a href="{% url 'universes:detail' slug=universe.slug %}" class="btn btn-sm btn-outline-dark">View Details</a>
+
+        <div class="card-footer bg-white border-0 pt-0">
+            <a href="{% url 'universes:detail' slug=universe.slug %}" class="btn btn-sm btn-outline-dark w-100">
+                View Details
+            </a>
         </div>
+
     </div>
 </div>

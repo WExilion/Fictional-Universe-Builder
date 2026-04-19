@@ -1,0 +1,23 @@
+{% if page_obj.has_other_pages %}
+<nav class="d-flex justify-content-center mt-4">
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ request.GET.search }}&genre={{ request.GET.genre }}&sort={{ request.GET.sort }}">‹</a>
+            </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}&search={{ request.GET.search }}&genre={{ request.GET.genre }}&sort={{ request.GET.sort }}">{{ num }}</a>
+            </li>
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ request.GET.search }}&genre={{ request.GET.genre }}&sort={{ request.GET.sort }}">›</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}

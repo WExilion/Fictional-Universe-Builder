@@ -1,13 +1,23 @@
+from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator
 from django.db import models
+from django.urls import reverse
 from django.utils.text import slugify
 
 from common.models import NameModel
 from common.validators import GenreNameValidator
 
+UserModel = get_user_model()
+
 
 # Create your models here.
 class Universe(NameModel):
+    owner = models.ForeignKey(
+        to=UserModel,
+        on_delete=models.CASCADE,
+        related_name='universes'
+    )
+
     genres = models.ManyToManyField(
         to='Genre',
         related_name='universes',
@@ -45,7 +55,10 @@ class Universe(NameModel):
 
         super().save(*args, **kwargs)
 
-
+    def get_absolute_url(self):
+        return reverse('universes:detail', kwargs={
+            'slug': self.slug,
+        })
 
 class Genre(models.Model):
     name = models.CharField(
