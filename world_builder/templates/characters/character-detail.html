@@ -19,25 +19,37 @@
                 <div class="card-body">
                     <h1 class="h3 card-title">{{ character.full_name }}</h1>
                     <hr>
-                    {% if character.role %}
-                        <span class="badge bg-dark mb-2">{{ character.role }}</span>
-                    {% endif %}
-                    <p><strong>Universe:</strong>
+                    <p><strong>Creator:</strong> <a href="{% url 'accounts:detail' pk=character.owner.pk %}">{{ character.owner.username }}</a></p>
+                    <p>
+                        <strong>Universe:</strong>
                         <a href="{% url 'universes:detail' slug=character.universe.slug %}">{{ character.universe.name }}</a>
                     </p>
+                    {% if character.role %}
+                        <p>
+                            <strong>Role:</strong>
+                            <span class="badge bg-dark">{{ character.role }}</span>
+                        </p>
+                    {% endif %}
                     {% if character.location %}
-                        <p><strong>Current Location:</strong>
-                            <a href="{% url 'locations:detail' universe_slug=character.location.universe.slug slug=character.location.slug %}">{{ character.location.get_full_path }}</a>
+                        <p>
+                            <strong>Current Location:</strong>
+                            <a href="{% url 'locations:detail' universe_slug=character.location.universe.slug slug=character.location.slug %}">{{ character.location.full_path }}</a>
                         </p>
                     {% endif %}
                     <p><strong>Created:</strong> {{ character.created_at|date:"F d, Y" }}</p>
                     <p><strong>Last Updated:</strong> {{ character.updated_at|timesince }} ago</p>
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'characters:update' universe_slug=character.universe.slug slug=character.slug %}" class="btn btn-outline-dark">Edit Character</a>
-                        <a href="{% url 'characters:delete' universe_slug=character.universe.slug slug=character.slug %}" class="btn btn-outline-danger">Delete Character</a>
-                    </div>
-                </div>
 
+                    {% if can_manage_object %}
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'characters:update' universe_slug=character.universe.slug slug=character.slug %}" class="btn btn-outline-dark">
+                                Edit Character
+                            </a>
+                            <a href="{% url 'characters:delete' universe_slug=character.universe.slug slug=character.slug %}" class="btn btn-outline-danger">
+                                Delete Character
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
