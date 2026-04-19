@@ -11,6 +11,7 @@ from django.views.generic import CreateView, DetailView, DeleteView
 from accounts.forms import UserRegisterForm, ProfileForm, UserDeleteForm, UserUpdateForm, UserLoginForm, \
     CustomPasswordChangeForm
 from accounts.models import Profile
+from accounts.tasks import send_welcome_email_task
 from common.mixins import ConfirmDeleteViewMixin
 from universes.models import Universe
 
@@ -29,8 +30,17 @@ class UserRegisterView(CreateView):
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
-        response = super().form_valid(form)
-        login(self.request, self.object, backend='django.contrib.auth.backends.ModelBackend') # noqa
+        with transaction.atomic():
+            response = super().form_valid(form)
+            login(
+                self.request,
+                self.object,
+                backend='django.contrib.auth.backends.ModelBackend',
+            )
+            # user = self.object
+            transaction.on_commit(
+                lambda: send_welcome_email_task.delay(self.object.pk)
+            )
         return response
 
 class UserLoginView(LoginView):

@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG') == 'True'
+DEBUG = os.getenv("DEBUG", "True") == "True"
 
 # ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if host.strip()]
@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'celery'
 ] + PROJECT_APPS
 
 MIDDLEWARE = [
@@ -99,6 +101,47 @@ DATABASES = {
     }
 }
 
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    # EMAIL_HOST = '127.0.0.1'
+    # EMAIL_PORT = 1025
+    # EMAIL_HOST_USER = ''
+    # EMAIL_HOST_PASSWORD = ''
+    # EMAIL_USE_TLS = False
+    DEFAULT_FROM_EMAIL = 'noreply@fictionbuilder.local'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.getenv('EMAIL_HOST')
+    EMAIL_PORT = os.getenv('EMAIL_PORT', '587')
+    EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+    EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+    EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True') == 'True'
+    DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
+
+
+
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/1'
+
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Europe/Sofia'
+CELERY_ENABLE_UTC = True
+
+# CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/0')
+# CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/0')
+
+
+
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+    ],
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -117,6 +160,10 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
+]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 
@@ -162,11 +209,14 @@ MESSAGE_TAGS = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-REQUESTS_PER_MINUTE = 5
 
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-SESSION_COOKIE_HTTPONLY = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
+# SECURE_SSL_REDIRECT = not DEBUG
+# SESSION_COOKIE_SECURE = not DEBUG
+# CSRF_COOKIE_SECURE = not DEBUG
+# SESSION_COOKIE_HTTPONLY = True
+# SECURE_CONTENT_TYPE_NOSNIFF = not DEBUG
+# SECURE_HSTS_SECONDS = 0 if DEBUG else 31536000
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+# SECURE_HSTS_PRELOAD = not DEBUG
 
-
+# REQUESTS_PER_MINUTE = 5
