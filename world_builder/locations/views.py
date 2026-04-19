@@ -1,7 +1,10 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
-from common.mixins import ConfirmDeleteViewMixin, MessageCreateUpdateViewMixin, LocationObjectViewMixin
+from common.choices import SORT_OPTIONS
+from common.mixins import CanManageObjectRequiredMixin, SetOwnerMixin, FilterOwnerFormMixin, UniverseSlugObjectMixin, \
+    MessageCreateUpdateViewMixin, ConfirmDeleteViewMixin, CanManageObjectContextMixin
 from locations.forms import LocationCreateForm, LocationUpdateForm, LocationDeleteForm, SearchForm
 from locations.models import Location
 
@@ -14,70 +17,71 @@ class LocationListView(ListView):
     extra_context = {'page_title': 'Locations'}
     paginate_by = 20
 
+    def get_search_form(self):
+        if not hasattr(self, '_search_form'):
+            data = self.request.GET.copy()
+            if 'sort' not in data:
+                data['sort'] = '-updated'
+            self._search_form = SearchForm(data)
+        return self._search_form
+
     def get_queryset(self):
-        self.form = SearchForm(self.request.GET)
-        queryset = Location.objects.select_related('universe', 'parent_location')
+        qs = super().get_queryset().select_related('universe', 'parent_location')
 
-        if self.form.is_valid():
-            search = self.form.cleaned_data.get('search')
-            universe = self.form.cleaned_data.get('universe')
+        form = self.get_search_form()
+        if form.is_valid():
+            search = form.cleaned_data.get('search')
+            universe = form.cleaned_data.get('universe')
+            sort = form.cleaned_data.get('sort')
             if search:
-                queryset = queryset.filter(name__icontains=search)
+                qs = qs.filter(name__icontains=search)
             if universe:
-                queryset = queryset.filter(universe=universe).distinct()
+                qs = qs.filter(universe__name__icontains=universe)
+            if sort and sort in SORT_OPTIONS:
+                qs = qs.order_by(SORT_OPTIONS[sort])
+            else:
+                qs = qs.order_by('-updated_at')
 
-        sort = self.request.GET.get('sort', '-created_at')
-        allowed_sorts = {
-            'name': 'name',
-            '-created_at': '-created_at',
-        }
-
-        return queryset.order_by(allowed_sorts.get(sort, '-created_at'))
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['form'] = self.form
-        context['sort'] = self.request.GET.get('sort', '-created_at')
+        context['search_form'] = self.get_search_form()
         return context
 
-class LocationDetailView(LocationObjectViewMixin,DetailView):
+class LocationDetailView(UniverseSlugObjectMixin, CanManageObjectContextMixin, DetailView):
     model = Location
     template_name = "locations/location-detail.html"
     context_object_name = 'location'
-
     def get_queryset(self):
-        return Location.objects.select_related(
-            'universe',
+        return super().get_queryset().select_related(
             'parent_location',
-            'parent_location__parent_location',
+            'parent_location__universe',
         ).prefetch_related(
             'sub_locations',
             'characters'
         )
 
-
-class LocationCreateView(MessageCreateUpdateViewMixin, CreateView):
+class LocationCreateView(LoginRequiredMixin, SetOwnerMixin, FilterOwnerFormMixin, MessageCreateUpdateViewMixin, CreateView):
     model = Location
     form_class = LocationCreateForm
     template_name = "locations/location-form.html"
     success_url = reverse_lazy('locations:list')
     success_message_action = 'created'
 
-class LocationUpdateView(LocationObjectViewMixin, MessageCreateUpdateViewMixin, UpdateView):
+class LocationUpdateView(LoginRequiredMixin, CanManageObjectRequiredMixin, FilterOwnerFormMixin, UniverseSlugObjectMixin, MessageCreateUpdateViewMixin, UpdateView):
     model = Location
     form_class = LocationUpdateForm
     template_name = "locations/location-form.html"
     success_message_action = 'updated'
-
-    def get_success_url(self):
-        return reverse_lazy('locations:detail', kwargs={
-            'slug': self.object.slug,
-            'universe_slug': self.object.universe.slug
-        })
+    def get_queryset(self):
+        return super().get_queryset().select_related('parent_location')
 
 
-class LocationDeleteView(LocationObjectViewMixin, ConfirmDeleteViewMixin, DeleteView):
+
+class LocationDeleteView(LoginRequiredMixin, CanManageObjectRequiredMixin, UniverseSlugObjectMixin, ConfirmDeleteViewMixin, DeleteView):
     model = Location
     form_class = LocationDeleteForm
     template_name = "locations/location-delete.html"
+    context_object_name = 'location'
     success_url = reverse_lazy('locations:list')

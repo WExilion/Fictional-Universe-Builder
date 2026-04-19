@@ -17,24 +17,35 @@
                 <div class="card-body">
                     <h1 class="h3 card-title">{{ location.name }}</h1>
                     <hr>
-                    {% if location.type %}
-                        <span class="badge bg-dark mb-2">{{ location.get_type_display }}</span>
-                    {% endif %}
-                    <p><strong>Universe:</strong>
+                    <p><strong>Creator:</strong> <a href="{% url 'accounts:detail' pk=location.owner.pk %}">{{ location.owner.username }}</a></p>
+                    <p>
+                        <strong>Universe:</strong>
                         <a href="{% url 'universes:detail' slug=location.universe.slug %}">{{ location.universe.name }}</a>
                     </p>
+                    {% if location.type %}
+                        <p>
+                            <strong>Type:</strong>
+                            <span class="badge bg-dark">{{ location.get_type_display }}</span>
+                        </p>
+                    {% endif %}
                     {% if location.parent_location %}
-                        <p><strong>Part of:</strong>
-                            <a href="{% url 'locations:detail' universe_slug=location.parent_location.universe.slug slug=location.parent_location.slug %}">{{ location.parent_location.get_full_path }}</a>
+                        <p><strong>Parent Location:</strong>
+                            <a href="{% url 'locations:detail' universe_slug=location.parent_location.universe.slug slug=location.parent_location.slug %}">{{ location.parent_location.full_path }}</a>
                         </p>
                     {% endif %}
                     <p><strong>Created:</strong> {{ location.created_at|date:"F d, Y" }}</p>
                     <p><strong>Last Updated:</strong> {{ location.updated_at|timesince }} ago</p>
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'locations:update' universe_slug=location.universe.slug slug=location.slug %}" class="btn btn-outline-dark">Edit Location</a>
-                        <a href="{% url 'locations:delete' universe_slug=location.universe.slug slug=location.slug %}" class="btn btn-outline-danger">Delete Location</a>
-                    </div>
 
+                    {% if can_manage_object  %}
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'locations:update' universe_slug=location.universe.slug slug=location.slug %}" class="btn btn-outline-dark">
+                                Edit Location
+                            </a>
+                            <a href="{% url 'locations:delete' universe_slug=location.universe.slug slug=location.slug %}" class="btn btn-outline-danger">
+                                Delete Location
+                            </a>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -60,7 +71,7 @@
 
 
             {% with sub_locations=location.sub_locations.all characters=location.characters.all %}
-            <ul class="nav nav-tabs mb-3" id="universeTabs" role="tablist">
+            <ul class="nav nav-tabs mb-3" id="locationTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="sub-locations-tab" data-bs-toggle="tab" data-bs-target="#sub-locations" type="button" role="tab">Sub-locations ({{ sub_locations|length }})</button>
                 </li>
@@ -68,7 +79,7 @@
                     <button class="nav-link" id="characters-tab" data-bs-toggle="tab" data-bs-target="#characters" type="button" role="tab">Residents ({{ characters|length }})</button>
                 </li>
             </ul>
-            <div class="tab-content" id="universeTabsContent">
+            <div class="tab-content" id="locationTabsContent">
                 <div class="tab-pane fade show active" id="sub-locations" role="tabpanel">
                     <div class="list-group list-group-flush border rounded">
                         {% for sub in sub_locations %}

@@ -1,13 +1,12 @@
 from django import forms
-from django.db.models import Q
-from django.utils.text import slugify
 
-from common.mixins import NameLengthMixin
+from common.choices import NAME_SORT_CHOICES
+from common.mixins import NameLengthMixin, OwnerScopedFormMixin
 from locations.models import Location
 from universes.models import Universe
 
 
-class LocationBaseForm(NameLengthMixin, forms.ModelForm):
+class LocationBaseForm(OwnerScopedFormMixin, NameLengthMixin, forms.ModelForm):
     class Meta:
         model = Location
         fields = ['name', 'image_url', 'type', 'description', 'universe', 'parent_location']
@@ -19,86 +18,77 @@ class LocationBaseForm(NameLengthMixin, forms.ModelForm):
             'universe': 'Associated Universe',
             'parent_location': 'Located Within (Optional)',
         }
-
-        help_texts = {
-            'name': 'Enter a unique name for the location.',
-            'image_url': 'Provide a direct link to an image file (JPG, JPEG, PNG, GIF, WEBP, SVG).',
-            'type': 'Select the type that best describes this location (e.g., Planet, Continent, City).',
-            'description': 'Give some background details about your location.',
-            'universe': 'You can select the associated universe.',
-        }
         widgets = {
             'name': forms.TextInput(attrs={
-                'placeholder': 'e.g., Hogwarts, Minas Tirith, Gotham City, The Shire, Winterfell...',
-                'class': 'form-control'
+                'placeholder': 'e.g., Minas Tirith or Gotham City'
             }),
             'image_url': forms.URLInput(attrs={
-                'placeholder': 'https://example.com/image.jpg',
-                'class': 'form-control'
+                'placeholder': 'https://example.com/image.jpg'
             }),
             'description': forms.Textarea(attrs={
-                'placeholder': 'e.g., A high-tech metropolis powered by neon and steam...',
-                'class': 'form-control',
-                'rows': 6
-            }),
-            'type': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'universe': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'parent_location': forms.Select(attrs={
-                'class': 'form-control'
+                'placeholder': 'Describe the atmosphere, history, or landmarks...',
+                'rows': 5
             }),
         }
-
+        help_texts = {
+            'name': 'The unique name for this location.',
+            'image_url': 'Link to an image. Supports JPG, PNG, or WEBP.',
+            'type': 'Choose the category that fits best (e.g., City, Region).',
+            'description': 'Briefly detail the background of this place.',
+            'universe': 'Select the world where this location exists.',
+        }
         error_messages = {
             'name': {
-                'max_length': 'That name is a bit too long. The limit is 100 characters.',
-                'required': 'Please give your location a name.'
+                'required': 'Enter a location name.',
+                'max_length': 'Location names must be 100 characters or fewer.'
             },
             'type': {
-                'required': 'Please select a location type.'
+                'required': 'Select a location type.'
             },
             'description': {
                 'required': 'Every location needs a backstory.',
+            },
+            'universe': {
+                'required': 'Choose an associated universe.'
+            },
+            'parent_location': {
+                'invalid_choice': 'This location must inhabit the chosen universe.'
             }
         }
 
 
+
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
 
+        self.style_form_fields()
 
-        if self.instance and self.instance.pk:
+        owner_for_queryset = self.get_owner_for_queryset()
+        universe_id = self.get_selected_universe_id()
+
+        if owner_for_queryset is not None:
+            self.fields['universe'].queryset = Universe.objects.filter(owner=owner_for_queryset)
+        else:
+            self.fields['universe'].queryset = Universe.objects.none()
+
+        excluded_pks = []
+        if self.instance.pk:
             excluded_pks = self.instance.get_descendant_pks()
             excluded_pks.append(self.instance.pk)
 
-            self.fields['parent_location'].queryset = Location.objects.filter(
-                universe=self.instance.universe
-            ).exclude(pk__in=excluded_pks)
-
-        elif 'universe' in self.data:
-            self.fields['parent_location'].queryset = Location.objects.filter(
-                universe_id=self.data.get('universe')
-            )
-
+        if universe_id:
+            parent_locations = Location.objects.filter(universe_id=universe_id)
+            if owner_for_queryset is not None:
+                parent_locations = parent_locations.filter(owner=owner_for_queryset)
+            if excluded_pks:
+                parent_locations = parent_locations.exclude(pk__in=excluded_pks)
+            self.fields['parent_location'].queryset = parent_locations
         else:
             self.fields['parent_location'].queryset = Location.objects.none()
 
     def clean_name(self):
         return self._check_name_length(field_name='name', min_length=5, field_label='Location Name')
-
-
-    def clean_parent_location(self):
-        parent = self.cleaned_data.get("parent_location")
-
-        if parent and parent.universe != self.cleaned_data.get("universe"):
-            raise forms.ValidationError(
-                "Parent location must belong to the same universe."
-            )
-
-        return parent
 
     def clean(self):
         cleaned_data = super().clean()
@@ -106,25 +96,16 @@ class LocationBaseForm(NameLengthMixin, forms.ModelForm):
         universe = self.cleaned_data.get('universe')
 
         if name and universe:
-            generated_slug = slugify(name)
-
-            duplicate = Location.objects.filter(
-                Q(name__iexact=name) | Q(slug=generated_slug),
+            exists = Location.objects.filter(
+                name__iexact=name,
                 universe=universe
-            ).exclude(pk=self.instance.pk).first()
+            ).exclude(pk=self.instance.pk).exists()
 
-            if duplicate:
-                if duplicate.name.lower() == name.lower():
-                    self.add_error(
-                        field='name',
-                        error=f"A location named '{name}' already exists in {universe.name}."
-                    )
-                else:
-                    self.add_error(
-                        field='name',
-                        error=f"A location with a similar name to '{duplicate.name}' already exists in {universe.name}. "
-                        f"Names like 'Planet Second' and 'Planet-Second', or 'O'reen' and 'Oreen' are considered the same."
-                    )
+            if exists:
+                self.add_error(
+                    field='name',
+                    error=f"A story with this named '{name}' already exists in {universe.name}." # noqa
+                )
         return cleaned_data
 
 
@@ -142,18 +123,21 @@ class LocationUpdateForm(LocationBaseForm):
         if self.instance.parent_location:
             self.fields['universe'].disabled = True
             self.fields['universe'].help_text = (
-                'Universe cannot be changed while a parent location is assigned. '
-                'Remove the parent location and update first to change the universe.'
+                'Universe is locked while a parent location is assigned. '
+                'Clear the parent location field to enable changes.'
             )
         else:
-            self.fields['universe'].help_text = 'No parent location assigned. You can change the universe.'
-
-
+            self.fields['universe'].help_text = "Ensure the parent location is empty to switch universes."
+            self.fields['parent_location'].help_text = (
+                'Parent locations must inhabit the chosen universe. '
+                'Empty this field before switching worlds.'
+            )
 
 
 class LocationDeleteForm(forms.Form):
     confirm = forms.BooleanField(
         required=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         label="I confirm that I want to delete this location",
         error_messages={
             'required': 'You must confirm before deleting.'
@@ -172,9 +156,19 @@ class SearchForm(forms.Form):
             'autocomplete': 'off',
         })
     )
-
-    universe = forms.ModelChoiceField(
-        queryset=Universe.objects.all(),
+    universe = forms.CharField(
+        max_length=100,
         required=False,
-        empty_label="All Universe"
+        label='Universe',
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Filter by universe...',
+            'class': 'form-control',
+            'autocomplete': 'off',
+        })
+    )
+    sort = forms.ChoiceField(
+        choices=NAME_SORT_CHOICES,
+        required=False,
+        label='Sort By',
+        widget=forms.Select(attrs={'class': 'form-select'})
     )

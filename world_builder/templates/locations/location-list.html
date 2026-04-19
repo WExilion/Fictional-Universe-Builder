@@ -6,63 +6,79 @@
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Locations</h1>
-        <a href="{% url 'locations:create' %}" class="btn btn-dark">Create New Location</a>
+        <a href="{% url 'locations:create' %}" class="btn btn-dark">New Location</a>
     </div>
 
 
     <div class="row mb-4">
-        <form method="GET" class="d-flex gap-2 mb-3">
-            {{ form.search }}
-            {{ form.universe }}
-            <button class="btn btn-outline-dark" type="submit">Search</button>
-            {% if request.GET.search or request.GET.universe %}
-                <a href="{% url 'locations:list' %}" class="btn btn-outline-secondary">Clear</a>
-            {% endif %}
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col">
+                {{ search_form.search }}
+            </div>
+            <div class="col-auto">
+                {{ search_form.universe }}
+            </div>
+            <div class="col-auto">
+                {{ search_form.sort }}
+            </div>
+            <div class="col-auto d-flex gap-2">
+                {% if request.GET.search or request.GET.universe or request.GET.sort %}
+                    <a href="{% url 'locations:list' %}" class="btn btn-outline-secondary">Clear</a>
+                {% endif %}
+                <button class="btn btn-outline-dark" type="submit">Search</button>
+            </div>
         </form>
     </div>
 
     <div class="d-flex justify-content-between align-items-center mb-3 text-muted small">
         <span>{{ page_obj.paginator.count }} location{{ page_obj.paginator.count|pluralize }} found</span>
-        <div class="d-flex gap-3">
-            <a href="?sort=-created_at&search={{ request.GET.search }}&universe={{ request.GET.universe }}" class="text-decoration-none {% if sort == '-created_at' %}fw-semibold text-dark{% else %}text-muted{% endif %}">Newest</a>
-            <a href="?sort=name&search={{ request.GET.search }}&universe={{ request.GET.universe }}" class="text-decoration-none {% if sort == 'name' %}fw-semibold text-dark{% else %}text-muted{% endif %}">A–Z</a>
-        </div>
     </div>
 
     <div class="row">
         <div class="col-12">
             {% for location in locations %}
-                <div class="d-flex justify-content-between align-items-center border-bottom py-3 px-2">
-                    <div class="d-flex align-items-center gap-3">
+                <div class="card mb-3 shadow-sm hover-shadow border-0">
+                    <div class="card-body d-flex justify-content-between align-items-center">
                         <div>
-                            <a href="{% url 'locations:detail' universe_slug=location.universe.slug slug=location.slug %}"
-                               class="fw-semibold text-dark text-decoration-none">
-                                {{ location.name }}
-                            </a>
-                            {% if location.parent_location %}
-                                <span class="text-muted small ms-1">→ {{ location.parent_location.name }}</span>
-                            {% endif %}
-                            <div class="text-muted small">
-                                <span>{{ location.universe.name }}</span>
-                                {% if location.description %}
-                                    · <span>{{ location.description|truncatechars:60 }}</span>
+                            <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                                <a href="{% url 'locations:detail' universe_slug=location.universe.slug slug=location.slug %}"
+                                   class="fw-semibold text-dark text-decoration-none">
+                                    {{ location.name }}
+                                </a>
+
+                                {% if location.type %}
+                                    <span class="badge bg-secondary">{{ location.get_type_display }}</span>
                                 {% endif %}
                             </div>
+
+                            <div class="text-muted small">
+                                <span>{{ location.universe.name }}</span>
+                                · <span>by {{ location.owner.username }}</span>
+                                · <span>Updated {{ location.updated_at|timesince }} ago</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <a href="{% url 'locations:update' universe_slug=location.universe.slug slug=location.slug %}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                        <a href="{% url 'locations:delete' universe_slug=location.universe.slug slug=location.slug %}" class="btn btn-sm btn-outline-danger">Delete</a>
-                        <a href="{% url 'locations:detail' universe_slug=location.universe.slug slug=location.slug %}" class="btn btn-sm btn-outline-dark">View</a>
+
+                        <div class="ms-3">
+                            <a href="{% url 'locations:detail' universe_slug=location.universe.slug slug=location.slug %}"
+                               class="btn btn-sm btn-outline-dark">
+                                View
+                            </a>
+                        </div>
                     </div>
                 </div>
             {% empty %}
-                <p class="text-muted">No locations yet. <a href="{% url 'locations:create' %}">Create the first one!</a></p>
+                <div class="col-12">
+                    {% if request.user.is_authenticated %}
+                        <p class="text-muted">No locations matched your search. <a href="{% url 'locations:create' %}">Create one?</a></p>
+                    {% else %}
+                        <p class="text-muted">No locations matched your search.</p>
+                    {% endif %}
+                </div>
             {% endfor %}
         </div>
     </div>
 
 
-    {% include 'shared/pagination.html' %}
+    {% include 'shared/pagination_content.html' %}
 </div>
 {% endblock %}

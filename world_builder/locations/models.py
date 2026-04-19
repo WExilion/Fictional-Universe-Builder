@@ -1,15 +1,26 @@
+from django.contrib.auth import get_user_model
 from django.db import models
-from django.utils.text import slugify
+from django.urls import reverse
 
+from common.mixins import SlugMixin
 from locations.choices import LocationType
 from common.models import NameModel
 
+UserModel = get_user_model()
 
 # Create your models here.
-class Location(NameModel):
+class Location(SlugMixin, NameModel):
+    slug_source_field = 'name'
+
     type = models.CharField(
         max_length=50,
-        choices=LocationType.choices,
+        choices=LocationType.choices, # noqa
+    )
+
+    owner = models.ForeignKey(
+        to=UserModel,
+        on_delete=models.CASCADE,
+        related_name='locations'
     )
 
     universe = models.ForeignKey(
@@ -27,7 +38,6 @@ class Location(NameModel):
     )
 
     slug = models.SlugField(
-        unique=False,
         blank=True,
         editable=False,
     )
@@ -45,20 +55,26 @@ class Location(NameModel):
             )
         ]
 
+    @property
+    def full_path(self):
+        if not hasattr(self, '_full_path_cache'):
+            parts = [self.name]
+            parent = self.parent_location
 
-    def save(self, *args, **kwargs):
-        base_slug = slugify(self.name)
+            while parent:
+                parts.append(parent.name)
+                parent = parent.parent_location
 
-        if not self.pk:
-            self.slug = base_slug
-        else:
-            old_instance = Location.objects.get(pk=self.pk)
-            if (old_instance.name != self.name or
-                    old_instance.universe != self.universe):
-                self.slug = base_slug
+            self._full_path_cache = ', '.join(reversed(parts))
 
-        super().save(*args, **kwargs)
+        return self._full_path_cache
 
+
+    def get_absolute_url(self):
+        return reverse('locations:detail', kwargs={
+            'universe_slug': self.universe.slug,
+            'slug': self.slug,
+        })
 
 
     def get_descendant_pks(self):
@@ -68,13 +84,3 @@ class Location(NameModel):
             locations_pks.extend(queue)
             queue = list(self.__class__.objects.filter(parent_location__in=queue).values_list('pk', flat=True))
         return locations_pks
-
-
-    def get_full_path(self):
-        parts = [self.name]
-        parent = self.parent_location
-
-        while parent is not None:
-            parts.append(parent.name)
-            parent = parent.parent_location
-        return ', '.join(parts)
