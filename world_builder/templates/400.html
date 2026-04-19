@@ -1,0 +1,11 @@
+{% extends 'shared/base.html' %}
+
+{% block title %}Bad Request{% endblock %}
+
+{% block content %}
+<div class="container text-center mt-5">
+    <h1>Error 400 - Bad Request</h1>
+    <p>The server could not understand the request. This might be due to a malformed link or invalid data.</p>
+    <a href="{% url 'common:home' %}" class="btn btn-dark">Go Home</a>
+</div>
+{% endblock %}

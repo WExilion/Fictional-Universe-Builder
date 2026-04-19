@@ -10,11 +10,38 @@
                     <a class="nav-link {% if request.resolver_match.namespace == 'universes' %}active{% endif %}" href="{% url 'universes:list' %}">Universes</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.namespace == 'characters' %}active{% endif %}" href="{% url 'characters:list' %}">Characters</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {% if request.resolver_match.namespace == 'locations' %}active{% endif %}" href="{% url 'locations:list' %}">Locations</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.namespace == 'characters' %}active{% endif %}" href="{% url 'characters:list' %}">Characters</a>
+                    <a class="nav-link {% if request.resolver_match.namespace == 'stories' %}active{% endif %}" href="{% url 'stories:list' %}">Stories</a>
                 </li>
+            </ul>
+
+
+            <ul class="navbar-nav ms-auto">
+                {% if request.user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:detail' request.user.profile.pk %}">My Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <form method="POST" action="{% url 'accounts:logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="nav-link border-0 bg-transparent btn-nav-link">
+                                Logout
+                            </button>
+                        </form>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.namespace == 'accounts' %}active{% endif %}" href="{% url 'accounts:login' %}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'accounts:register' %}">Register</a>
+                    </li>
+                {% endif %}
             </ul>
         </div>
     </div>

@@ -1,17 +1,22 @@
-/*body {*/
-    /*padding-top: 0px; !* Navbar height *!*/
-/*}*/
 
-/*main {*/
-/*    padding-top: 2rem;*/
-/*    padding-bottom: 2rem;*/
-/*}*/
 
-/*:root {*/
-/*    --bs-btn-bg: #212529;*/
-/*    --bs-btn-border-color: #212529;*/
-/*    --bs-btn-hover-bg: #343a40;*/
-/*}*/
+.navbar .nav-item form .btn-nav-link {
+    color: rgba(255,255,255,.55);
+}
+
+.navbar .nav-item form .btn-nav-link:hover {
+    color: rgba(255,255,255,1);
+}
+
+
+.hover-shadow {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-shadow:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.12);
+}
 
 
 .genre-checkbox {
@@ -49,6 +54,20 @@
     }
 }
 
+.form-text ul,
+.invalid-feedback ul {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+}
+
+.form-text li,
+.invalid-feedback li {
+    margin-bottom: 4px;
+}
+
+
+
 textarea.form-control {
     min-height: 150px;
 }
@@ -56,6 +75,7 @@ textarea.form-control {
 .genre-checkbox input {
     margin-right: 5px;
 }
+
 
 
 
@@ -68,7 +88,6 @@ textarea.form-control {
     background-color: #d63384 !important;
     color: #fff !important;
 }
-
 
 
 .g-danger  {
