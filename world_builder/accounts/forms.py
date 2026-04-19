@@ -18,28 +18,28 @@ class UserBaseForm(forms.ModelForm):
         }
         widgets = {
             'email': forms.EmailInput(attrs={
-                'placeholder': 'e.g., writer@example.com',
+                'placeholder': 'name@example.com',
                 'class': 'form-control'
             }),
             'username': forms.TextInput(attrs={
-                'placeholder': 'e.g., WhiteDove',
+                'placeholder': 'Choose a username',
                 'class': 'form-control'
             }),
         }
         help_texts = {
-            'username': 'This is the name that will be shown with your creations. You may use any name you wish.',
-            'email': 'Your email will be used for logging in. We’ll never share it with others.'
+            'username': 'Visible to others on your creations.',
+            'email': 'Used for login. We value your privacy.'
         }
         error_messages = {
             'email': {
-                'required': 'Please provide an email address.',
-                'invalid': 'Check your email format (e.g., name@email.com).',
-                'unique': 'Use a different email or reset your password.',
+                'required': 'Enter an email address.',
+                'unique': 'This email is already in use. Try logging in?',
+                'invalid': 'Enter a valid email address.',
             },
             'username': {
-                'required': 'Please choose a unique username.',
-                'unique': 'Try a different username.',
-                'max_length': 'Shorten your username to 100 characters or less.',
+                'required': 'Enter a username.',
+                'unique': 'This username is taken. Try another?',
+                'max_length': 'Username must be 100 characters or fewer.',
             }
         }
 
@@ -57,11 +57,17 @@ class UserRegisterForm(UserBaseForm, UserCreationForm):
             })
 
         self.fields['password1'].error_messages.update({
-            'required': 'Entering a password is required.'
+            'required': 'Enter a password.'
         })
         self.fields['password2'].error_messages.update({
-            'required': 'Password confirmation is required.'
+            'required': 'Confirm your password.'
         })
+
+class UserUpdateForm(UserBaseForm, UserChangeForm):
+    password = None
+    class Meta(UserBaseForm.Meta):
+        pass
+
 
 
 
@@ -85,28 +91,6 @@ class UserLoginForm(AuthenticationForm):
         self.fields['password'].error_messages.update({
             'required': 'Password is required.'
         })
-
-
-
-
-class UserUpdateForm(UserBaseForm, UserChangeForm):
-    password = None
-    class Meta(UserBaseForm.Meta):
-        pass
-
-class CustomPasswordChangeForm(PasswordChangeForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['old_password'].label = 'Current Password'
-        self.fields['new_password1'].label = 'New Password'
-        self.fields['new_password2'].label = 'Confirm New Password'
-
-        self.fields['old_password'].help_text = 'Enter your current password to confirm changes.'
-
-        for field in self.fields.values():
-            field.widget.attrs.update({
-                'class': 'form-control'
-            })
 
 
 class ProfileForm(forms.ModelForm):
@@ -153,6 +137,21 @@ class ProfileForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'form-control'
+
+
+class CustomPasswordChangeForm(PasswordChangeForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['old_password'].label = 'Current Password'
+        self.fields['new_password1'].label = 'New Password'
+        self.fields['new_password2'].label = 'Confirm New Password'
+
+        self.fields['old_password'].help_text = 'Enter your current password to confirm changes.'
+
+        for field in self.fields.values():
+            field.widget.attrs.update({
+                'class': 'form-control'
+            })
 
 
 class UserDeleteForm(forms.Form):

@@ -18,35 +18,35 @@ class StoryBaseForm(OwnerScopedFormMixin, NameLengthMixin, forms.ModelForm):
             'universe': 'Associated Universe',
             'characters': 'Associated Characters (Optional)',
         }
-        help_texts = {
-            'title': 'Give your tale a unique and memorable title.',
-            'content': 'Write the next chapter of your journey here.',
-            'is_published': 'Check this box when you are ready for others to read your work.',
-            'universe': 'Choose the world where this story takes place.',
-            'characters': 'Tag the characters who appear in this tale.',
-        }
         widgets = {
             'title': forms.TextInput(attrs={
-                'placeholder': 'Enter title...'
+                'placeholder': 'The Chronicles of...'
             }),
             'content': forms.Textarea(attrs={
-                'placeholder': 'Write your story here...',
+                'placeholder': 'Once upon a time...',
                 'rows': 20
             }),
         }
+        help_texts = {
+            'title': 'Choose a unique title for your tale.',
+            'content': 'Write the next chapter of your journey.',
+            'is_published': 'Make this story visible to the community',
+            'universe': 'Select the world where this story unfolds.',
+            'characters': 'Tag the characters featured in this tale.',
+        }
         error_messages = {
             'title': {
-                'max_length': 'That title is a bit too long! Try to keep it under 120 characters.',
-                'required': 'Your story needs a title before you can save it.'
+                'required': 'Your story needs a title.',
+                'max_length': 'Keep titles under 120 characters.'
             },
             'content': {
-                'required': 'The page is still blank—add some content to your story!'
+                'required': 'The page is still blank—tell your story!'
             },
             'universe': {
-                'required': 'Please select the universe where this story takes place.'
+                'required': 'Choose a universe for this story.'
             },
             'characters': {
-                'invalid_choice': 'Characters must belong to the selected universe.'
+                'invalid_choice': 'Chosen characters must inhabit the selected universe.'
             }
         }
 
@@ -120,12 +120,15 @@ class StoryUpdateForm(StoryBaseForm):
         if self.instance.pk and self.instance.characters.exists():
             self.fields['universe'].disabled = True
             self.fields['universe'].help_text = (
-                'Cannot change universe with assigned characters. Remove associated characters and update to proceed.'
+                'Cannot change universe while characters are assigned. '
+                'Remove them first to update this setting.'
             )
         else:
-            self.fields['universe'].help_text = 'Clear associated characters before switching universes.'
-            self.fields['characters'].help_text = ('Characters must belong to the selected universe. '
-                                                   'If you change the universe, please clear this field before saving.')
+            self.fields['universe'].help_text = 'Choose the world where this story unfolds.'
+            self.fields['characters'].help_text = (
+                'Characters must inhabit the chosen universe. '
+                'Clear this field before switching worlds.'
+            )
 
 class StoryDeleteForm(forms.Form):
     confirm = forms.BooleanField(
@@ -163,16 +166,3 @@ class SearchForm(forms.Form):
         label='Sort By',
         widget=forms.Select(attrs={'class': 'form-select'})
     )
-
-
-
-        # if self.instance.pk: # and self.instance.universe_id
-        #     self.fields['characters'].queryset = Character.objects.filter(
-        #         universe_id=self.instance.universe_id
-        #     )
-        # elif self.data.get('universe'):
-        #     self.fields['characters'].queryset = Character.objects.filter(
-        #         universe_id=self.data.get('universe')
-        #     )
-        # else:
-        #     self.fields['characters'].queryset = Character.objects.none()
