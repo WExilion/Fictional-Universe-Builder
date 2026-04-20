@@ -78,5 +78,5 @@ jobs:
         id: deploy-to-webapp
         with:
           app-name: 'fictional-universe-builder'
-          package: ./deploy/world_builder
+          package: ./deploy
           
