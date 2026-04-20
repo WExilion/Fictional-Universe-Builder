@@ -16,6 +16,11 @@ jobs:
     permissions:
       contents: read #This is required for actions/checkout
 
+    defaults:
+      run:
+        working-directory: ./world_builder
+
+
     steps:
       - uses: actions/checkout@v4
 
@@ -38,8 +43,8 @@ jobs:
         with:
           name: python-app
           path: |
-            .
-            !antenv/
+            ./world_builder
+            !./world_builder/antenv/
 
       # 🚫 Opting Out of Oryx Build
       # If you prefer to disable the Oryx build process during deployment, follow these steps:
@@ -73,4 +78,5 @@ jobs:
         with:
           app-name: 'fictional-universe-builder'
           slot-name: 'Production'
+          package: ./world_builder
           
