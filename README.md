@@ -1,97 +1,212 @@
 # 🌌 Fictional Universe Builder
 
-A professional Django web application for world-builders to create and manage interconnected fictional universes, characters, and locations with deep relational integrity.
+Fictional Universe Builder is a Django web application for creating and managing fictional universes, characters, stories, and locations. It includes relational validation across connected content, role-based access control, REST API endpoints built with Django REST Framework, and asynchronous email processing with Celery and Redis.
+
+---
 
 ## ✨ Features
-- **Interconnected Universes:** Create expansive settings with custom descriptions and multiple genres.
-- **Dynamic Genre Management:** Select from a library of existing genres or contribute new ones on the fly.
-- **Character & Role Tracking:** Build detailed character profiles, assign roles, and track their current locations.
-- **Hierarchical World Building:** Create locations with parent/sub-location relationships (e.g., Planet -> Region -> City).
-- **Data Integrity Logic:** Custom form validation ensures characters and sub-locations can only be assigned within their own universe.
-- **Advanced Search & Sorting:** Real-time filtering by name, universe, or genre with multiple sorting options.
-- **Visual Categorization:** Custom color-coded genre tags and a responsive UI built with Bootstrap 5.
+- **Custom authentication system** with email-based login and user profiles.
+- **Automatic profile creation** using Django signals.
+- **Role-based access control** with `Members` and `Moderators` groups.
+- **Universe management** with genres and descriptive world-building data.
+- **Character, story, and location management** with universe-aware relationships and validation.
+- **Relational data modeling** using foreign key and many-to-many relationships across universes, genres, stories, characters, and locations.
+- **Hierarchical locations** with parent and sub-location relationships.
+- **Object-level permissions and relational validation** to ensure content can only be modified by authorized users and related data remains within valid universe boundaries.
+- **REST API endpoints** for Universes and Stories using Django REST Framework.
+- **Search and sorting** across content collections.
+- **Asynchronous welcome emails** using Celery and Redis.
+
+---
 
 ## 🛠️ Tech Stack
-- **Backend:** Python 3.x, Django 6.0.3
-- **Database:** PostgreSQL (Production-ready)
-- **Frontend:** Bootstrap 5, Custom CSS
-- **Environment:** `python-dotenv` for secure configuration
+- **Backend:** Python, Django, Django REST Framework
+- **Database:** PostgreSQL
+- **Task Queue:** Celery
+- **Broker:** Redis
+- **Frontend:** Bootstrap 5, Django Templates, custom CSS
+- **Configuration:** `python-dotenv`
+
+---
 
 ## 📂 Project Structure
+```text
+Fictional-Universe-Builder/
+├── world_builder/
+│   ├── accounts/
+│   ├── characters/
+│   ├── common/
+│   ├── locations/
+│   ├── static/
+│   ├── stories/
+│   ├── templates/
+│   ├── universes/
+│   ├── world_builder/
+│   ├── .env.example
+│   ├── manage.py
+│   └── requirements.txt
+├── .gitignore
+└── README.md
 ```
-world_builder/
-├── common/         # Home page, base templates, shared mixins, and custom validators
-├── universes/      # Universe and Genre management (M2M relationships)
-├── characters/     # Character management (FK to Universe & Location)
-├── locations/      # Location management (FK to Universe & Self-referential hierarchies)
-└── templates/      # Centralized HTML templates with namespaced organization
-```
+
+---
 
 ## 🚀 Setup & Installation
 
 1. **Clone the repository**
+
 ```bash
 git clone https://github.com/WExilion/Fictional-Universe-Builder.git
-cd Fictional-Universe-Builder
+cd Fictional-Universe-Builder/world_builder
 ```
 
 2. **Create and activate a virtual environment**
+
+**Windows:**
 ```bash
 python -m venv .venv
-# Windows
-.venv\Scripts\activate  
-# Mac/Linux
-source .venv/bin/activate  
+.venv\Scripts\activate
+```
+**macOS / Linux:**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
 ```
 
 3. **Install dependencies**
+
 ```bash
 pip install -r requirements.txt
 ```
 
-4. **Configure Environment Variables**
-- Copy `.env.example` to `.env`
-- Fill in your PostgreSQL credentials and a unique `SECRET_KEY`
+4. **Configure environment variables**
 
-5. **Apply Database Migrations**
+Copy `.env.example` to a new file named `.env`, then fill in the required values.
+
+Then configure:
+- Django secret key
+- PostgreSQL credentials
+- Redis URL
+- Email/SMTP credentials
+
+5. **Start Redis**
 ```bash
-python manage.py migrate
+redis-server
 ```
 
-6. **Seed the Database (Optional but Recommended)**
-Populate your project with high-quality sample data from *A Song of Ice and Fire*, *Star Wars*, and *Dune*:
+6. **Apply migrations and seed sample data**
 ```bash
+python manage.py migrate
 python manage.py seed
 ```
 
-7. **Run the Development Server**
+7. **Start the Django development server**
 ```bash
 python manage.py runserver
 ```
 
-## 🔐 Environment Variables
+8. **Start the Celery worker in a separate terminal**
 
-| Variable | Description | Default |
-|---|---|---|
-| `SECRET_KEY` | Django's secret key for cryptographic signing | - |
-| `DEBUG` | Set to `True` for development, `False` for production | `True` |
-| `DB_NAME` | PostgreSQL database name | - |
-| `DB_USER` | PostgreSQL username | - |
-| `DB_PASSWORD` | PostgreSQL password | - |
-| `DB_HOST` | Database host | `localhost` |
-| `DB_PORT` | Database port | `5432` |
-
-## 🔗 Key URL Routes
-
-| Page | URL Pattern |
-|---|---|
-| **Home** | `/` |
-| **Universes** | `/universes/` |
-| **Universe Detail** | `/universes/<slug>/` |
-| **Characters** | `/characters/` |
-| **Character Detail** | `/characters/<universe_slug>/<slug>/` |
-| **Locations** | `/locations/` |
-| **Location Detail** | `/locations/<universe_slug>/<slug>/` |
+**Windows:**
+```bash
+celery -A world_builder worker --pool=solo --loglevel=info
+```
+**macOS / Linux:**
+```bash
+celery -A world_builder worker --loglevel=info
+```
 
 ---
-*Developed as part of the **Django Basics** course, within the **Python Web** program.*
+
+## 🧪 Running Tests
+The project includes automated tests covering core model behavior, signals, forms, and views.
+```bash
+python manage.py test
+```
+
+---
+
+## 🔐 Environment Variables
+| Variable              | Description                   | Default                    |
+| --------------------- | ----------------------------- | -------------------------- |
+| `SECRET_KEY`          | Django secret key             | -                          |
+| `DEBUG`               | Development mode toggle       | `True`                     |
+| `ALLOWED_HOSTS`       | Comma-separated allowed hosts | `localhost,127.0.0.1`      |
+| `DB_NAME`             | PostgreSQL database name      | -                          |
+| `DB_USER`             | PostgreSQL username           | -                          |
+| `DB_PASSWORD`         | PostgreSQL password           | -                          |
+| `DB_HOST`             | PostgreSQL host               | `127.0.0.1`                |
+| `DB_PORT`             | PostgreSQL port               | `5432`                     |
+| `REDIS_URL`           | Redis broker URL              | `redis://127.0.0.1:6379/0` |
+| `EMAIL_HOST`          | SMTP server host              | -                          |
+| `EMAIL_PORT`          | SMTP server port              | -                          |
+| `EMAIL_HOST_USER`     | SMTP account username/email   | -                          |
+| `EMAIL_HOST_PASSWORD` | SMTP account password         | -                          |
+| `EMAIL_USE_TLS`       | Enable TLS for SMTP           | `True`                     |
+
+---
+
+## 🔗 API Endpoints
+Authenticated users can create, update, and delete resources based on project permissions.
+
+### Universes API
+- `GET /api/universes/` — list universes
+- `POST /api/universes/` — create universe
+- `GET /api/universes/<slug>/` — retrieve universe details
+- `PUT /api/universes/<slug>/` — update universe
+- `PATCH /api/universes/<slug>/` — partially update universe
+- `DELETE /api/universes/<slug>/` — delete universe
+
+### Stories API
+- `GET /api/stories/` — list stories
+- `POST /api/stories/` — create story
+- `GET /api/stories/<universe_slug>/<slug>/` — retrieve story details
+- `PUT /api/stories/<universe_slug>/<slug>/` — update story
+- `PATCH /api/stories/<universe_slug>/<slug>/` — partially update story
+- `DELETE /api/stories/<universe_slug>/<slug>/` — delete story
+
+---
+
+## 🔗 Main URL Routes
+
+| Page             | URL Pattern                                  |
+|------------------|----------------------------------------------|
+| Home             | `/`                                          |
+| Register         | `/accounts/register/`                        |
+| Login            | `/accounts/login/`                           |
+| Logout           | `/accounts/logout/`                          |
+| Profile Detail   | `/accounts/profile/<pk>/`                    |
+| Profile Edit     | `/accounts/profile/edit/`                    |
+| Account Delete   | `/accounts/profile/delete/`                  |
+| Change Password  | `/accounts/profile/password-change/`         |
+| Universes        | `/universes/`                                |
+| Universe Create  | `/universes/create/`                         |
+| Universe Detail  | `/universes/<slug>/`                         |
+| Universe Edit    | `/universes/<slug>/update/`                  |
+| Universe Delete  | `/universes/<slug>/delete/`                  |
+| Characters       | `/characters/`                               |
+| Character Create | `/characters/create/`                        |
+| Character Detail | `/characters/<universe_slug>/<slug>/`        |
+| Character Edit   | `/characters/<universe_slug>/<slug>/update/` |
+| Character Delete | `/characters/<universe_slug>/<slug>/delete/` |
+| Locations        | `/locations/`                                |
+| Location Create  | `/locations/create/`                         |
+| Location Detail  | `/locations/<universe_slug>/<slug>/`         |
+| Location Edit    | `/locations/<universe_slug>/<slug>/update/`  |
+| Location Delete  | `/locations/<universe_slug>/<slug>/delete/`  |
+| Stories          | `/stories/`                                  |
+| Story Create     | `/stories/create/`                           |
+| Story Detail     | `/stories/<universe_slug>/<slug>/`           |
+| Story Edit       | `/stories/<universe_slug>/<slug>/update/`    |
+| Story Delete     | `/stories/<universe_slug>/<slug>/delete/`    |
+
+---
+
+## Notes
+- Before starting the project, make sure PostgreSQL and Redis are installed and running locally.
+- Email functionality depends on valid SMTP credentials.
+- Sample data can be loaded with the custom seed management command.
+
+---
+
+*Developed as part of the **Django Advanced** course, within the **Python Web** program.*
