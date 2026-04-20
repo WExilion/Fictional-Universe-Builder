@@ -1,9 +1,11 @@
 from django.contrib.auth import get_user_model
+from django.core.validators import MinLengthValidator
 from django.db import models
 from django.urls import reverse
 
 from common.mixins import SlugMixin
 from common.models import TimestampedModel
+from common.validators import StoryTitleValidator
 
 UserModel = get_user_model()
 
@@ -12,7 +14,11 @@ class Story(SlugMixin, TimestampedModel):
     slug_source_field = 'title'
 
     title = models.CharField(
-        max_length=120
+        max_length=100,
+        validators=[
+            MinLengthValidator(3),
+            StoryTitleValidator
+        ]
     )
     content = models.TextField()
 
@@ -45,10 +51,10 @@ class Story(SlugMixin, TimestampedModel):
 
     class Meta(TimestampedModel.Meta):
         constraints = [
-            models.UniqueConstraint(
-                fields=['title', 'universe'],
-                name='unique_title_per_universe',
-            ),
+            # models.UniqueConstraint(
+            #     fields=['title', 'universe'],
+            #     name='unique_title_per_universe',
+            # ),
             models.UniqueConstraint(
                 fields=['slug', 'universe'],
                 name='unique_story_slug_per_universe',
@@ -61,6 +67,7 @@ class Story(SlugMixin, TimestampedModel):
             'universe_slug': self.universe.slug,
             'slug': self.slug,
         })
+
 
     def __str__(self):
         return self.title

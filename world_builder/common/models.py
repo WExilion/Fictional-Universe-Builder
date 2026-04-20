@@ -1,3 +1,4 @@
+from django.core.validators import MinLengthValidator
 from django.db import models
 from common.validators import ImageURLValidator, NameValidator
 
@@ -28,7 +29,10 @@ class BaseModel(TimestampedModel):
 class NameModel(BaseModel):
     name = models.CharField(
         max_length=100,
-        validators=[NameValidator]
+        validators=[
+            NameValidator,
+            MinLengthValidator(5)
+        ]
     )
     class Meta(BaseModel.Meta):
         abstract = True

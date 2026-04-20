@@ -15,14 +15,23 @@ MAGIC_BYTES = {
 }
 
 NameValidator = RegexValidator(
-    regex=r"^[^\W\d_]+(?:[ '-][^\W\d_]+)*$",
-    message="Please use only letters, with a single hyphen, space, or apostrophe. Numbers and symbols aren't allowed."
+    regex=r"^[A-Za-z]+(?:[ '-][A-Za-z]+)*$",
+    message="Name must contain only Latin letters. You can use a single space, hyphen, or apostrophe between words."
 )
 
 GenreNameValidator = RegexValidator(
     regex=r"^[a-zA-Z]+(?:[ -][a-zA-Z]+)*$",
-    message="Genre must contain only letters, with a single space or hyphen between words."
+    message="Genre name must consist of Latin letters, optionally separated by a single space or hyphen."
 )
+
+
+StoryTitleValidator = RegexValidator(
+    regex=r"^[A-Za-z0-9][A-Za-z0-9 '\".,:;!?()\-]*$",
+    message="Title must start with a Latin letter or number and may contain spaces and common punctuation."
+)
+
+
+
 
 @deconstructible
 class ImageURLValidator:

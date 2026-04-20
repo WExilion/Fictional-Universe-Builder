@@ -2,12 +2,12 @@ from django import forms
 
 from characters.models import Character
 from common.choices import FIRST_NAME_SORT_CHOICES
-from common.mixins import NameLengthMixin, OwnerScopedFormMixin
+from common.mixins import OwnerScopedFormMixin
 from locations.models import Location
 from universes.models import Universe
 
 
-class CharacterBaseForm(OwnerScopedFormMixin, NameLengthMixin, forms.ModelForm):
+class CharacterBaseForm(OwnerScopedFormMixin, forms.ModelForm):
     class Meta:
         model = Character
         fields = ['first_name', 'last_name', 'image_url', 'role', 'description', 'universe', 'location']
@@ -50,10 +50,12 @@ class CharacterBaseForm(OwnerScopedFormMixin, NameLengthMixin, forms.ModelForm):
             'first_name': {
                 'required': 'Enter a first name.',
                 'max_length': 'First name must be 100 characters or fewer.',
+                'min_length': 'First name must be at least 2 characters long.'
             },
             'last_name': {
                 'required': 'Enter a last name.',
                 'max_length': 'Last name must be 100 characters or fewer.',
+                'min_length': 'Last name must be at least 2 characters long.'
             },
             'role': {
                 'max_length': 'Role title is too long (max 100 characters).',
@@ -87,12 +89,6 @@ class CharacterBaseForm(OwnerScopedFormMixin, NameLengthMixin, forms.ModelForm):
             self.fields['location'].queryset = locations
         else:
             self.fields['location'].queryset = Location.objects.none()
-
-    def clean_first_name(self):
-        return self._check_name_length(field_name='first_name', min_length=2)
-
-    def clean_last_name(self):
-        return self._check_name_length(field_name='last_name', min_length=2)
 
 
 class CharacterCreateForm(CharacterBaseForm):

@@ -1,12 +1,12 @@
 from django import forms
 
 from common.choices import NAME_SORT_CHOICES
-from common.mixins import NameLengthMixin, OwnerScopedFormMixin
+from common.mixins import OwnerScopedFormMixin
 from locations.models import Location
 from universes.models import Universe
 
 
-class LocationBaseForm(OwnerScopedFormMixin, NameLengthMixin, forms.ModelForm):
+class LocationBaseForm(OwnerScopedFormMixin, forms.ModelForm):
     class Meta:
         model = Location
         fields = ['name', 'image_url', 'type', 'description', 'universe', 'parent_location']
@@ -40,7 +40,8 @@ class LocationBaseForm(OwnerScopedFormMixin, NameLengthMixin, forms.ModelForm):
         error_messages = {
             'name': {
                 'required': 'Enter a location name.',
-                'max_length': 'Location names must be 100 characters or fewer.'
+                'max_length': 'Location names must be 100 characters or fewer.',
+                'min_length': 'Location name must be at least 5 characters long.',
             },
             'type': {
                 'required': 'Select a location type.'
@@ -87,13 +88,11 @@ class LocationBaseForm(OwnerScopedFormMixin, NameLengthMixin, forms.ModelForm):
         else:
             self.fields['parent_location'].queryset = Location.objects.none()
 
-    def clean_name(self):
-        return self._check_name_length(field_name='name', min_length=5, field_label='Location Name')
 
     def clean(self):
-        cleaned_data = super().clean()
-        name = self.cleaned_data.get('name')
-        universe = self.cleaned_data.get('universe')
+        cleaned_data = super().clean() or {}
+        name = cleaned_data.get('name')
+        universe = cleaned_data.get('universe')
 
         if name and universe:
             exists = Location.objects.filter(

@@ -1,13 +1,13 @@
 from django import forms
 
 from characters.models import Character
-from common.mixins import NameLengthMixin, OwnerScopedFormMixin
+from common.mixins import OwnerScopedFormMixin
 from common.choices import TITLE_SORT_CHOICES
 from stories.models import Story
 from universes.models import Universe
 
 
-class StoryBaseForm(OwnerScopedFormMixin, NameLengthMixin, forms.ModelForm):
+class StoryBaseForm(OwnerScopedFormMixin, forms.ModelForm):
     class Meta:
         model = Story
         fields = ['title', 'content', 'is_published', 'universe', 'characters']
@@ -37,7 +37,8 @@ class StoryBaseForm(OwnerScopedFormMixin, NameLengthMixin, forms.ModelForm):
         error_messages = {
             'title': {
                 'required': 'Your story needs a title.',
-                'max_length': 'Keep titles under 120 characters.'
+                'max_length': 'The title must be 100 characters or fewer.',
+                'min_length': 'The title must be at least 3 characters long.',
             },
             'content': {
                 'required': 'The page is still blank—tell your story!'
@@ -75,29 +76,22 @@ class StoryBaseForm(OwnerScopedFormMixin, NameLengthMixin, forms.ModelForm):
             self.fields['characters'].queryset = Character.objects.none()
 
 
-
-
-
-    def clean_title(self):
-        return self._check_name_length(field_name='title', min_length=5, field_label='Story title')
-
     def clean(self):
-        cleaned_data = super().clean()
-        title = self.cleaned_data.get('title')
-        universe = self.cleaned_data.get('universe')
-        characters = self.cleaned_data.get('characters')
+        cleaned_data = super().clean() or {}
+        universe = cleaned_data.get('universe')
+        characters = cleaned_data.get('characters')
 
-        if title and universe:
-            exists = Story.objects.filter(
-                title__iexact=title,
-                universe=universe
-            ).exclude(pk=self.instance.pk).exists()
-
-            if exists:
-                self.add_error(
-                    field='title',
-                    error=f"A story with this title '{title}' already exists in {universe.name}." # noqa
-                )
+        # if title and universe:
+        #     exists = Story.objects.filter(
+        #         title__iexact=title,
+        #         universe=universe
+        #     ).exclude(pk=self.instance.pk).exists()
+        #
+        #     if exists:
+        #         self.add_error(
+        #             field='title',
+        #             error=f"A story with this title '{title}' already exists in {universe.name}." # noqa
+        #         )
 
         if characters and universe:
             if characters.exclude(universe=universe).exists(): # noqa

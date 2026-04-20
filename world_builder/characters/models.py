@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.validators import MinLengthValidator
 from django.db import models
 from django.urls import reverse
 
@@ -15,11 +16,17 @@ class Character(SlugMixin, BaseModel):
 
     first_name = models.CharField(
         max_length=50,
-        validators=[NameValidator]
+        validators=[
+            NameValidator,
+            MinLengthValidator(2)
+        ]
     )
     last_name = models.CharField(
         max_length=50,
-        validators=[NameValidator]
+        validators=[
+            NameValidator,
+            MinLengthValidator(2)
+        ]
     )
 
     role = models.CharField(

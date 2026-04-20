@@ -4,12 +4,11 @@ from django.db.models import Q
 from django.utils.text import slugify
 
 from common.choices import NAME_SORT_CHOICES
-from common.mixins import NameLengthMixin
 from common.validators import GenreNameValidator
 from universes.models import Universe, Genre
 
 
-class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
+class UniverseBaseForm(forms.ModelForm):
     genres = forms.ModelMultipleChoiceField(
         queryset=Genre.objects.all(),
         required=False,
@@ -63,8 +62,9 @@ class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
 
         error_messages = {
             'name': {
+                'required': 'Please name your universe.',
                 'max_length': 'Whoa, that’s a mouthful. Let\'s keep the name under 100 characters.',
-                'required': 'Please name your universe.'
+                'min_length': 'Universe name must be at least 5 characters long.',
             },
             'description': {
                 'required': 'Your universe needs a backstory.',
@@ -73,12 +73,16 @@ class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
 
 
     def clean_name(self):
-        name = self._check_name_length(field_name='name', min_length=4, field_label='Universe Name')
-
+        name = self.cleaned_data['name'].strip()
         generated_slug = slugify(name)
 
+        if not generated_slug:
+            raise forms.ValidationError(
+                "Universe name must contain Latin letters."
+            )
+
         duplicate = Universe.objects.filter(
-            Q(name__iexact=name) | Q(slug=generated_slug)
+            Q(name__iexact=name) | Q(slug=slugify(name))
         ).exclude(pk=self.instance.pk).first()
 
         if duplicate:
@@ -93,17 +97,17 @@ class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
         return name
 
 
-
     def clean_new_genre(self):
-        new_genre = self.cleaned_data.get('new_genre')
+        new_genre = self.cleaned_data['new_genre']
         if new_genre:
-            return new_genre.strip().title() # noqa
+            return new_genre.strip().title()
         return new_genre
 
+
     def clean(self):
-        cleaned_data = super().clean()
-        genres = cleaned_data.get('genres') or [] # noqa
-        new_genre = cleaned_data.get('new_genre') # noqa
+        cleaned_data = super().clean() or {}
+        genres = cleaned_data.get('genres') or []
+        new_genre = cleaned_data.get('new_genre')
 
         if not genres and not new_genre:
             self.add_error(
@@ -114,7 +118,7 @@ class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
         if new_genre:
             genres_lower = [g.name.lower() for g in genres]
 
-            if new_genre.lower() in genres_lower: # noqa
+            if new_genre.lower() in genres_lower:
                 self.add_error(
                     field='new_genre',
                     error=f'"{new_genre}" is already selected above — no need to add it again.'
@@ -127,11 +131,13 @@ class UniverseBaseForm(NameLengthMixin, forms.ModelForm):
 
         new_genre_is_valid = new_genre and not self.has_error('new_genre')
         total = len(genres) + (1 if new_genre_is_valid else 0)
+
         if total > 6:
             self.add_error(
                 field='genres',
                 error=f'You selected {total} genres — choose up to 6 genres in total, including a new custom genre.'
             )
+
         return cleaned_data
 
 

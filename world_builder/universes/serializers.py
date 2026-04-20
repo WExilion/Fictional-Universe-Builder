@@ -1,4 +1,6 @@
 from django.core.validators import MinLengthValidator
+from django.db.models import Q
+from django.utils.text import slugify
 from rest_framework import serializers
 
 from common.validators import GenreNameValidator
@@ -41,6 +43,38 @@ class UniverseSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
         read_only_fields = ['id', 'slug', 'owner', 'owner_username', 'created_at', 'updated_at']
+
+    def validate_name(self, name):
+        name = name.strip()
+        generated_slug = slugify(name)
+
+        if not generated_slug:
+            raise serializers.ValidationError(
+                "Universe name must contain Latin letters."
+            )
+
+        queryset = Universe.objects.filter(
+            Q(name__iexact=name) | Q(slug=generated_slug)
+        )
+
+        if self.instance is not None:
+            queryset = queryset.exclude(pk=self.instance.pk)
+
+        duplicate = queryset.first()
+
+        if duplicate:
+            if duplicate.name.lower() == name.lower():
+                raise serializers.ValidationError(
+                    f"A universe named '{name}' already exists."
+                )
+
+            raise serializers.ValidationError(
+                f"A universe with a similar name to '{duplicate.name}' already exists. "
+                f"Names like Universe Second and Universe-Second, or Galaxy's Edge and Galaxys Edge are considered the same."
+            )
+
+        return name
+
 
     def validate(self, attrs):
         instance = getattr(self, 'instance', None)

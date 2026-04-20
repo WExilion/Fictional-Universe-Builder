@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin
+from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from django.utils.text import slugify
 
@@ -151,19 +152,6 @@ class OwnerScopedFormMixin:
         return None
 
 
-class NameLengthMixin:
-    def _check_name_length(self, field_name: str, min_length: int = 2, field_label: str = None):
-        name = self.cleaned_data.get(field_name)
-        label = field_label or field_name.replace('_', ' ').title()
-
-        if name and len(name) < min_length:
-            raise forms.ValidationError(
-                f"{label} must be at least {min_length} characters long."
-            )
-
-        return name
-
-
 # Models.
 class SlugMixin:
     slug_field_name = 'slug'
@@ -187,6 +175,11 @@ class SlugMixin:
     def save(self, *args, **kwargs):
         base_slug = slugify(self.get_slug_source_value())
 
+        if not base_slug:
+            raise ValidationError({
+                self.slug_source_field: "This field must contain at least one letter or number"
+            })
+
         if not self.pk:
             slug = base_slug
         else:
@@ -205,12 +198,6 @@ class SlugMixin:
             else:
                 slug = getattr(self, self.slug_field_name) or base_slug
 
-            # if (getattr(old_instance, self.slug_source_field) != self.get_slug_source_value() or
-            #         getattr(old_instance, f"{self.slug_related_field}_id") != self.get_slug_related_id()):
-            #         # getattr(old_instance, self.slug_related_field) != self.get_slug_related_value()):
-            #     slug = base_slug
-            # else:
-            #     slug = getattr(self, self.slug_field_name) or base_slug
 
         final_slug = slug
         counter = 1

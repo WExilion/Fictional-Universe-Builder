@@ -7,10 +7,12 @@ UserModel = get_user_model()
 
 @shared_task
 def send_welcome_email_task(user_id: int) -> None:
-    user = UserModel.objects.get(pk=user_id)
+    try:
+        user = UserModel.objects.get(pk=user_id)
+    except UserModel.DoesNotExist:
+        return
 
-
-    if not user or not user.email:
+    if not user.email:
         return
 
     send_mail(
