@@ -10,7 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
-import cloudinary_storage
+# import cloudinary_storage
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -33,7 +33,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = [host.strip() for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if host.strip()]
-CSRF_TRUSTED_ORIGINS = [host.strip() for host in os.getenv("CSRF_TRUSTED_ORIGINS", "localhost,127.0.0.1").split(",") if host.strip()]
+CSRF_TRUSTED_ORIGINS = [host.strip() for host in os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost,http://127.0.0.1").split(",") if host.strip()]
 
 # Application definition
 
@@ -56,7 +56,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'celery',
     # 'cloudinary',
-    'cloudinary_storage'
+    # 'cloudinary_storage'
 ] + PROJECT_APPS
 
 MIDDLEWARE = [
