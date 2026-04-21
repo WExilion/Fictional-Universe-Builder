@@ -1,7 +1,11 @@
+from io import BytesIO
+
+from PIL import Image
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
-from common.validators import NameValidator, FileSizeValidator, FileTypeValidator, GenreNameValidator, ImageURLValidator
+from common.validators import NameValidator, FileSizeValidator, GenreNameValidator, ImageURLValidator, \
+    PillowImageValidator
 
 
 class ValidatorTests(TestCase):
@@ -71,40 +75,46 @@ class ValidatorTests(TestCase):
                     validator(url)
 
 
+
+def make_uploaded_image(name, fmt, content_type):
+    file_obj = BytesIO()
+    Image.new("RGB", (10, 10), "white").save(file_obj, format=fmt)
+    file_obj.seek(0)
+    return SimpleUploadedFile(name, file_obj.getvalue(), content_type=content_type)
+
+class FileValidatorTests(TestCase):
     def test_file_type_validator_accepts_valid_types(self):
-        validator = FileTypeValidator(allowed_types=['jpg', 'png', 'webp'])
+        validator = PillowImageValidator(allowed_types=['jpg', 'png', 'webp'])
 
         valid_files = [
-            ('jpg', SimpleUploadedFile('test.jpg', b'\xff\xd8\xff' + b'0' * 10)),
-            ('png', SimpleUploadedFile('test.png', b'\x89PNG' + b'0' * 10)),
-            ('webp', SimpleUploadedFile('test.webp', b'RIFF' + b'0000' + b'WEBP' + b'0' * 4)),
+            ('jpg', make_uploaded_image('test.jpg', 'JPEG', 'image/jpeg')),
+            ('png', make_uploaded_image('test.png', 'PNG', 'image/png')),
+            ('webp', make_uploaded_image('test.webp', 'WEBP', 'image/webp')),
         ]
+
         for file_type, file in valid_files:
             with self.subTest(file_type=file_type):
                 validator(file)
 
+
     def test_file_type_validator_with_invalid_type(self):
-        validator = FileTypeValidator(allowed_types=['jpg', 'png'])
+        validator = PillowImageValidator(allowed_types=['jpg', 'png'])
 
         invalid_file = SimpleUploadedFile('test.txt', b'This is a text file')
         with self.assertRaisesMessage(ValidationError, validator.message):
             validator(invalid_file)
 
     def test_file_type_validator_rejects_file_with_valid_extension_but_invalid_content(self):
-        validator = FileTypeValidator(allowed_types=['jpg', 'png'])
+        validator = PillowImageValidator(allowed_types=['jpg', 'png'])
 
         fake_jpg = SimpleUploadedFile('test.jpg', b'This is not really an image')
 
         with self.assertRaisesMessage(ValidationError, validator.message):
             validator(fake_jpg)
 
-    def test_file_type_validator_resets_file_pointer(self):
-        validator = FileTypeValidator(allowed_types=['jpg'])
-
-        file = SimpleUploadedFile('test.jpg', b'\xff\xd8\xff' + b'0' * 10)
-        validator(file)
-
-        self.assertEqual(file.tell(), 0)
+    def test_file_type_validator_skips_non_file_values(self):
+        validator = PillowImageValidator()
+        validator("cloudinary/public_id")
 
 
 

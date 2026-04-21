@@ -1,10 +1,11 @@
+from cloudinary.models import CloudinaryField
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 
 from accounts.choices import Gender
 from accounts.managers import UserManager
-from common.validators import NameValidator, FileSizeValidator, FileTypeValidator
+from common.validators import NameValidator, FileSizeValidator, PillowImageValidator
 
 
 # Create your models here.
@@ -42,13 +43,13 @@ class Profile(models.Model):
         on_delete=models.CASCADE,
         related_name='profile'
     )
-    avatar = models.ImageField(
-        upload_to='avatars/',
+    avatar = CloudinaryField(
+        'image',
         blank=True,
         null=True,
         validators=[
-            FileTypeValidator(),
-            FileSizeValidator()
+            PillowImageValidator(),
+            FileSizeValidator(),
         ]
     )
     first_name = models.CharField(

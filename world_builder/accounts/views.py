@@ -37,9 +37,9 @@ class UserRegisterView(CreateView):
                 self.object,
                 backend='django.contrib.auth.backends.ModelBackend',
             )
-            # user = self.object
+            user_id = self.object.pk
             transaction.on_commit(
-                lambda: send_welcome_email_task.delay(self.object.pk)
+                lambda: send_welcome_email_task.delay(user_id)
             )
         return response
 

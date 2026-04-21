@@ -5,14 +5,9 @@ from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import UploadedFile
 from django.core.validators import RegexValidator
 from django.utils.deconstruct import deconstructible
+from PIL import Image, UnidentifiedImageError
 
 ALLOWED_IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'webp']
-MAGIC_BYTES = {
-    'jpg':  (0, b"\xff\xd8\xff"),
-    'jpeg': (0, b"\xff\xd8\xff"),
-    'png':  (0, b"\x89PNG"),
-    'webp': (8, b"WEBP"),
-}
 
 NameValidator = RegexValidator(
     regex=r"^[A-Za-z]+(?:[ '-][A-Za-z]+)*$",
@@ -52,21 +47,32 @@ class ImageURLValidator:
 
 
 @deconstructible
-class FileTypeValidator:
+class PillowImageValidator:
     def __init__(self, allowed_types: list[str] = None, message: str = None) -> None:
-        self.allowed_types = [t.lower().lstrip(".") for t in (allowed_types or ALLOWED_IMAGE_TYPES)]
-        self.message = message or f"Unsupported file type. Allowed: {', '.join(self.allowed_types)}."
+        self.allowed_types = {t.lower().lstrip(".").replace("jpg", "jpeg") for t in (allowed_types or ALLOWED_IMAGE_TYPES)}
+        self.message = message or f"Unsupported or invalid image. Allowed: {', '.join(sorted(self.allowed_types))}."
 
     def __call__(self, value: UploadedFile) -> None:
-        header = value.read(16)
-        value.seek(0)
+        if not all(hasattr(value, attr) for attr in ("read", "seek", "tell")):
+            return
 
-        for allowed in self.allowed_types:
-            offset, magic = MAGIC_BYTES.get(allowed, (0, None))
-            if magic and header[offset:offset + len(magic)] == magic:
-                return
+        pos = value.tell()
+        try:
+            value.seek(0)
+            with Image.open(value) as img:
+                fmt = (img.format or "").lower()
+                if fmt not in self.allowed_types:
+                    raise ValidationError(
+                        f"Unsupported image type '{fmt or 'unknown'}'. "
+                        f"Allowed: {', '.join(sorted(self.allowed_types))}.")
 
-        raise ValidationError(self.message)
+                img.verify()
+
+        except (UnidentifiedImageError, OSError):
+            raise ValidationError(self.message)
+
+        finally:
+            value.seek(pos)
 
 @deconstructible
 class FileSizeValidator:
@@ -75,5 +81,50 @@ class FileSizeValidator:
         self.message = message or f"The uploaded image exceeds the maximum allowed size of {self.file_size_mb} MB."
 
     def __call__(self, value: UploadedFile) -> None:
-        if value.size > self.file_size_mb * 1024 * 1024: # noqa
+        size = getattr(value, "size", None)
+        if size is None:
+            return
+        if size > self.file_size_mb * 1024 * 1024:
             raise ValidationError(self.message)
+
+
+
+
+# MAGIC_BYTES = {
+#     'jpg':  (0, b"\xff\xd8\xff"),
+#     'jpeg': (0, b"\xff\xd8\xff"),
+#     'png':  (0, b"\x89PNG"),
+#     'webp': (8, b"WEBP"),
+# }
+# @deconstructible
+# class FileTypeValidator:
+#     def __init__(self, allowed_types: list[str] = None, message: str = None) -> None:
+#         self.allowed_types = [t.lower().lstrip(".") for t in (allowed_types or ALLOWED_IMAGE_TYPES)]
+#         self.message = message or f"Unsupported file type. Allowed: {', '.join(self.allowed_types)}."
+#
+#
+#     def __call__(self, value) -> None:
+#         if not hasattr(value, "read"):
+#             return
+#
+#         pos = value.tell() if hasattr(value, "tell") else None
+#         header = value.read(16)
+#
+#         if hasattr(value, "seek"):
+#             value.seek(pos or 0)
+#
+#         for allowed in self.allowed_types:
+#             offset, magic = MAGIC_BYTES.get(allowed, (0, None))
+#             if magic and header[offset:offset + len(magic)] == magic:
+#                 return
+#
+#         raise ValidationError(self.message)
+
+
+
+
+
+
+
+
+
