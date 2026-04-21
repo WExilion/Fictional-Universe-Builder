@@ -17,13 +17,13 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         with transaction.atomic():
             users = self._seed_users()
-            admin_user = users['admin']
+            member_user = users['member']
 
             self._seed_genres()
-            self._seed_universes(admin_user)
-            self._seed_locations(admin_user)
-            self._seed_characters(admin_user)
-            self._seed_stories(admin_user)
+            self._seed_universes(member_user)
+            self._seed_locations(member_user)
+            self._seed_characters(member_user)
+            self._seed_stories(member_user)
 
         self.stdout.write(self.style.SUCCESS('Database seeded successfully!'))
 
@@ -31,17 +31,6 @@ class Command(BaseCommand):
     def _seed_users(self):
         members_group, _ = Group.objects.get_or_create(name='Members')
         moderators_group, _ = Group.objects.get_or_create(name='Moderators')
-
-        # Admin User
-        admin_user, _ = UserModel.objects.get_or_create(
-            email='admin@test.com',
-            defaults={'username': 'admin'}
-        )
-        admin_user.username = 'admin'
-        admin_user.is_staff = True
-        admin_user.is_superuser = True
-        admin_user.set_password('admin123')
-        admin_user.save()
 
         # Moderator User
         moderator_user, _ = UserModel.objects.get_or_create(
@@ -69,7 +58,6 @@ class Command(BaseCommand):
 
 
         return {
-            'admin': admin_user,
             'moderator': moderator_user,
             'member': member_user,
         }
