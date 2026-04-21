@@ -85,4 +85,31 @@ jobs:
         with:
           app-name: 'fictional-universe-builder'
           package: ./deploy
-          
+        
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: python-app
+          path: ./deploy
+      
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_2E98DC03A5BC469898FB01806C85E347 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_A86D5206B19D4407B3F4D3A2BF8FDC17 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_78A357960C7F42258E3884E03588C0B2 }}
+
+      - name: 'Deploy to Azure Web App'
+        uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
+        with:
+          app-name: 'fictional-universe-builder-worker'
+          package: ./deploy

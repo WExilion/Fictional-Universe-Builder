@@ -1,21 +1,26 @@
 # 🌌 Fictional Universe Builder
 
-Fictional Universe Builder is a Django web application for creating and managing fictional universes, characters, stories, and locations. It includes relational validation across connected content, role-based access control, REST API endpoints built with Django REST Framework, and asynchronous email processing with Celery and Redis.
+Fictional Universe Builder is a Django web application for creating and managing fictional universes, characters, locations, and stories. The project demonstrates relational data modeling, role-based access control, Django REST Framework integration, and asynchronous task processing with Celery and Redis.
 
 ---
 
 ## ✨ Features
-- **Custom authentication system** with email-based login and user profiles.
-- **Automatic profile creation** using Django signals.
-- **Role-based access control** with `Members` and `Moderators` groups.
-- **Universe management** with genres and descriptive world-building data.
-- **Character, story, and location management** with universe-aware relationships and validation.
-- **Relational data modeling** using foreign key and many-to-many relationships across universes, genres, stories, characters, and locations.
-- **Hierarchical locations** with parent and sub-location relationships.
-- **Object-level permissions and relational validation** to ensure content can only be modified by authorized users and related data remains within valid universe boundaries.
-- **REST API endpoints** for Universes and Stories using Django REST Framework.
+- **Custom user model** with email-based authentication.
+- **Automatic profile creation** with Django signals.
+- **Role-based access control** using `Members` and `Moderators` groups.
+- **CRUD functionality** for universes, characters, locations, and stories.
+- **Relational validation** to keep connected content within the correct universe.
+- **Hierarchical locations** with parent and sub-location support.
 - **Search and sorting** across content collections.
+- **REST API endpoints** for Universes and Stories using Django REST Framework.
 - **Asynchronous welcome emails** using Celery and Redis.
+
+---
+
+## Business Rules
+- Characters, locations, and stories must belong to a valid universe
+- Related objects are validated to prevent cross-universe mismatches
+- Content editing and deletion are restricted based on ownership, role, and project permissions
 
 ---
 
@@ -51,7 +56,32 @@ Fictional-Universe-Builder/
 
 ---
 
-## 🚀 Setup & Installation
+## 🌐 Live Demo
+
+The project is deployed and accessible at:
+
+**URL:** [Fictional Universe Builder](https://fictional-universe-builder-ekg7escyc7f4ake4.switzerlandnorth-01.azurewebsites.net)
+
+## ☁️ Cloud Deployment
+
+- **Platform:** Microsoft Azure App Service
+- **Region:** Switzerland North
+- **Python version:** 3.14
+- **Database:** Azure PostgreSQL
+- **CI/CD:** GitHub Actions (auto-deploys on push to `main`)
+
+---
+
+## 🔑 Test Accounts
+
+| Role      | Email              | Password     | Access         |
+|-----------|--------------------|--------------|----------------|
+| Moderator | moderator@test.com | moderator123 | Moderator user |
+| Member    | member@test.com    | member123    | Regular user   |
+
+---
+
+## 🚀 Run Locally: Setup & Installation
 
 1. **Clone the repository**
 
@@ -94,7 +124,7 @@ Then configure:
 redis-server
 ```
 
-6. **Apply migrations and seed sample data**
+6. **Apply migrations and load sample data**
 ```bash
 python manage.py migrate
 python manage.py seed
@@ -147,7 +177,7 @@ python manage.py test
 ---
 
 ## 🔗 API Endpoints
-Authenticated users can create, update, and delete resources based on project permissions.
+The API uses Django authentication and project permission rules. Authenticated users can create, update, and delete resources according to ownership and role permissions.
 
 ### Universes API
 - `GET /api/universes/` — list universes
@@ -203,6 +233,8 @@ Authenticated users can create, update, and delete resources based on project pe
 ---
 
 ## Notes
+- PostgreSQL and Redis must be installed and running locally for full functionality.
+
 - Before starting the project, make sure PostgreSQL and Redis are installed and running locally.
 - Email functionality depends on valid SMTP credentials.
 - Sample data can be loaded with the custom seed management command.
